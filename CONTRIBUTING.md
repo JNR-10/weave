@@ -4,17 +4,22 @@ Working agreement for the Weave project team (CMPE 295A/B).
 
 ## Responsibilities
 
-Each member owns an area, reviews the others, and contributes to integration, experiments,
-analysis, and the final report.
+Each member owns one layer of the system, reviews the others, and contributes to integration,
+experiments, analysis, and the final report.
 
-| Member | Owns |
-|---|---|
-| Jainil Rana | MLX distributed execution, pipeline integration, model execution |
-| Urmi Shah | Profiling, performance model, placement optimizer, adaptive scheduler |
-| Mohit Barade | Benchmark framework, telemetry, workload generation, experiments |
+| Member | Owns | Answers |
+|---|---|---|
+| Member 1 | MLX Distributed integration, pipeline execution, JACCL/RING backends, partition application and switching, workload generator | What does reconfiguration cost, and does the interconnect change that answer? |
+| Member 2 | Cluster profiler, runtime telemetry, KV-cache and memory estimator | How accurate is the performance model — do predicted memory and stage times match reality? |
+| Member 3 | Placement policies (equal, memory-proportional, static profiled, adaptive), how-many-Macs decision, ablation design | Does adaptation beat static placement, and in which workload ranges? |
+
+Shared across the team: Month 1 reproduction of the current state of the art, integration, the
+M5–M6 experiment campaign, analysis, and the final report. The failure and stall recovery
+stretch goal attaches to Member 1 if it is reached.
 
 Ownership means *responsible for*, not *sole author of*. Anyone may work anywhere; the owner
-reviews changes in their area.
+reviews changes in their area. Each role carries its own open question so that every member has
+a distinct, visible contribution in the final report.
 
 ## Branches
 

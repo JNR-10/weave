@@ -100,13 +100,20 @@ and stall recovery are a stretch goal only.
 
 ## Team
 
-| Member | Primary responsibility |
-|---|---|
-| Jainil Rana | MLX distributed execution, pipeline integration, model execution |
-| Urmi Shah | Profiling, performance model, placement optimizer, adaptive scheduler |
-| Mohit Barade | Benchmark framework, telemetry, workload generation, experiments |
+Jainil Rana · Mohit Barade · Urmi Shah
 
-All members contribute to integration, experiments, analysis, and the final report.
+Three roles, each owning one layer of the system and one open question that it answers.
+
+| Member | Owns | Answers |
+|---|---|---|
+| Member 1 | MLX Distributed integration, pipeline execution, JACCL/RING backends, partition application and switching, workload generator | What does reconfiguration cost, and does the interconnect change that answer? |
+| Member 2 | Cluster profiler, runtime telemetry, KV-cache and memory estimator | How accurate is the performance model — do predicted memory and stage times match reality? |
+| Member 3 | Placement policies (equal, memory-proportional, static profiled, adaptive), how-many-Macs decision, ablation design | Does adaptation beat static placement, and in which workload ranges? |
+
+Shared across the team: Month 1 reproduction of the current state of the art, integration, the
+M5–M6 experiment campaign, analysis, and the final report. The failure and stall recovery
+stretch goal attaches to Member 1 if it is reached.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the working agreement.
 
 **Project Advisor:** Kaikai Liu, Associate Professor, Department of Computer Engineering, SJSU
