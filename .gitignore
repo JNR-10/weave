@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+.python-version
+
+# --- Model weights and caches ---
+# MLX / Hugging Face model artifacts are large; download them, don't commit them.
+*.safetensors
+*.gguf
+*.npz
+models/
+.cache/
+.huggingface/
+
+# --- Experiment output ---
+# Directory structure is tracked via .gitkeep; raw runs are not.
+results/**/*.json
+results/**/*.csv
+results/**/*.jsonl
+results/**/*.parquet
+results/**/*.log
+logs/
+*.log
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Microsoft Office lock files ---
+~$*
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
