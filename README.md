@@ -79,6 +79,7 @@ experiments/     reproducible experiment configurations and run instructions
 results/         experiment output (structure tracked, raw runs gitignored)
 scripts/         setup and cluster utilities
 docs/            project proposal and design documents
+meetings/        weekly team and advisor meeting notes
 ```
 
 ## Roadmap
@@ -117,6 +118,11 @@ stretch goal attaches to Member 1 if it is reached.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the working agreement.
 
 **Project Advisor:** Kaikai Liu, Associate Professor, Department of Computer Engineering, SJSU
+
+## Meeting records
+
+Weekly team notes and advisor meeting notes are stored in the [`meetings/`](meetings/) folder.
+Each note lists decisions, blockers, action items, owners, and the next checkpoint.
 
 ## License
 
