@@ -15,6 +15,6 @@ This folder contains the CMPE 295A meeting record from the beginning of the seme
 - [September 11 — Project flow, UML, and architecture](2026-09-11-team.md)
 - [September 18 — Final planning and implementation handoff](2026-09-18-team.md)
 - [September 25 — First implementation sprint](2026-09-25-team.md)
-- [October 1 — Workbook 1 review](2026-10-01-team.md)
+- [September 30 — Workbook 1 review](2026-09-30-team.md)
 
 Times and meeting modes should be confirmed by the team before submission.
