@@ -107,9 +107,9 @@ Three roles, each owning one layer of the system and one open question that it a
 
 | Member | Owns | Answers |
 |---|---|---|
-| Member 1 | MLX Distributed integration, pipeline execution, JACCL/RING backends, partition application and switching, workload generator | What does reconfiguration cost, and does the interconnect change that answer? |
-| Member 2 | Cluster profiler, runtime telemetry, KV-cache and memory estimator | How accurate is the performance model — do predicted memory and stage times match reality? |
-| Member 3 | Placement policies (equal, memory-proportional, static profiled, adaptive), how-many-Macs decision, ablation design | Does adaptation beat static placement, and in which workload ranges? |
+| Jainil Rana | MLX Distributed integration, pipeline execution, JACCL/RING backends, partition application and switching, workload generator | What does reconfiguration cost, and does the interconnect change that answer? |
+| Mohit Barade | Cluster profiler, runtime telemetry, KV-cache and memory estimator | How accurate is the performance model — do predicted memory and stage times match reality? |
+| Urmi Shah | Placement policies (equal, memory-proportional, static profiled, adaptive), how-many-Macs decision, ablation design | Does adaptation beat static placement, and in which workload ranges? |
 
 Shared across the team: Month 1 reproduction of the current state of the art, integration, the
 M5–M6 experiment campaign, analysis, and the final report. The failure and stall recovery
