@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "simulation": {
+      "const": true
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selected_plan_id": {
+      "type": "null"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "memory_feasible_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": "2.0.0"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_snapshot_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "profile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "simulation": {
+            "const": true
+          },
+          "selected": {
+            "const": false
+          },
+          "policy": {
+            "const": "candidate_only"
+          },
+          "mode": {
+            "enum": [
+              "single_device",
+              "pipeline"
+            ]
+          },
+          "logical_split": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "mlx_split_by_rank": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "device_id_by_mlx_rank": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "properties": {
+                "device_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "logical_stage": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "mlx_rank": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "start_layer": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end_layer_exclusive": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "layer_count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "memory_components": {
+                  "type": "object",
+                  "properties": {
+                    "layer_weight_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "replicated_weight_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "kv_upper_bound_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "workspace_reserve_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "safety_margin_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "layer_weight_bytes",
+                    "replicated_weight_bytes",
+                    "kv_upper_bound_bytes",
+                    "workspace_reserve_bytes",
+                    "safety_margin_bytes"
+                  ],
+                  "additionalProperties": true
+                },
+                "predicted_memory_bytes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "safe_process_budget_bytes": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "headroom_bytes": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "device_id",
+                "logical_stage",
+                "mlx_rank",
+                "start_layer",
+                "end_layer_exclusive",
+                "layer_count",
+                "memory_components",
+                "predicted_memory_bytes",
+                "safe_process_budget_bytes",
+                "headroom_bytes"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "memory_feasible": {
+            "type": "boolean"
+          },
+          "rejection_reasons": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "runtime_verified": {
+            "const": false
+          },
+          "executable": {
+            "const": false
+          }
+        },
+        "required": [
+          "schema_version",
+          "plan_id",
+          "source_snapshot_id",
+          "model_id",
+          "model_revision",
+          "profile_id",
+          "simulation",
+          "selected",
+          "policy",
+          "mode",
+          "logical_split",
+          "mlx_split_by_rank",
+          "device_id_by_mlx_rank",
+          "assignments",
+          "memory_feasible",
+          "rejection_reasons",
+          "runtime_verified",
+          "executable"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "simulation",
+    "source_snapshot_id",
+    "selected_plan_id",
+    "candidate_count",
+    "memory_feasible_count",
+    "candidates"
+  ],
+  "additionalProperties": true
+}
