@@ -105,3 +105,22 @@ def test_bad_device_field_is_named(path, mutate):
     mutate(state["devices"])
     with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
         validate_state(state)
+
+
+PHASE1_LIMITS = [
+    ("simulation", lambda s: s.update(simulation=False)),
+    ("model.source", lambda s: s["model"].update(source="measured")),
+    ("devices[1].source", lambda s: s["devices"][1].update(source="measured")),
+    ("devices[0].budget_basis", lambda s: s["devices"][0].update(budget_basis="live_available")),
+    ("request_envelope.concurrency", lambda s: s["request_envelope"].update(concurrency=2)),
+    ("devices", lambda s: s["devices"].append({**s["devices"][1], "device_id": "SIMULATED-third"})),
+]
+
+
+@pytest.mark.parametrize("path, mutate", PHASE1_LIMITS)
+def test_phase1_limit_is_named_as_such(path, mutate):
+    # Well-formed input that only Phase 1 refuses; Phase 2 lifts these limits, not the parsing.
+    state = make_state()
+    mutate(state)
+    with pytest.raises(ValueError, match=rf"^{re.escape(path)}: Phase 1 "):
+        validate_state(state)

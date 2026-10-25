@@ -193,35 +193,40 @@ def _parse_state(raw: Any) -> _ClusterState:
     return _ClusterState(snapshot_id, simulation, model, request, _parse_devices(devices))
 
 
+PHASE1_MAX_DEVICES = 2
+
+
+def _phase1_limit(path: str, accepted: str, got: Any) -> ValueError:
+    return ValueError(f"{path}: Phase 1 accepts {accepted} only, got {got!r}")
+
+
+def _check_phase1_limits(state: _ClusterState) -> None:
+    """Phase 1 plans only wholly simulated, fresh-process, one-request, at-most-two-Mac input.
+
+    Guide section 8 makes this a safety boundary: an uncalibrated estimate must never pass as a
+    measured deployment. The limits live here, apart from parsing and planning, so Phase 2 lifts
+    them by changing this check alone.
+    """
+    if state.simulation is not True:
+        raise _phase1_limit("simulation", "simulated input (true)", state.simulation)
+    if state.model.source != "simulated":
+        raise _phase1_limit("model.source", "'simulated'", state.model.source)
+    if state.request.concurrency != 1:
+        raise _phase1_limit("request_envelope.concurrency", "1", state.request.concurrency)
+    if len(state.devices) > PHASE1_MAX_DEVICES:
+        raise _phase1_limit("devices", f"at most {PHASE1_MAX_DEVICES} devices", len(state.devices))
+    for i, device in enumerate(state.devices):
+        if device.source != "simulated":
+            raise _phase1_limit(f"devices[{i}].source", "'simulated'", device.source)
+        if device.budget_basis != "fresh_process_absolute":
+            raise _phase1_limit(
+                f"devices[{i}].budget_basis", "'fresh_process_absolute'", device.budget_basis
+            )
+
+
 def validate_state(state: dict[str, Any]) -> dict[str, Any]:
     """Fail closed with a ValueError naming the field; returns the state unchanged when valid."""
-    _parse_state(state)
-    try:
-        return _check_state(state)
-    except (KeyError, TypeError, AttributeError) as exc:
-        raise ValueError(f"malformed cluster state: {exc!r}") from exc
-
-
-def _check_state(state: dict[str, Any]) -> dict[str, Any]:
-    if state.get("schema_version") != VERSION:
-        raise ValueError("unsupported schema_version; migrate explicitly to 2.0.0")
-    if state.get("simulation") is not True:
-        raise ValueError("Phase 1 fixture runner accepts simulation=true only")
-    if not isinstance(state.get("snapshot_id"), str) or not state["snapshot_id"]:
-        raise ValueError("snapshot_id is required")
-    model, req = state["model"], state["request_envelope"]
-    if model["source"] != "simulated":
-        raise ValueError("fixture model profile must be labeled simulated")
-    if req["concurrency"] != 1:
-        raise ValueError("Phase 1 supports concurrency=1 only")
-    devices = state["devices"]
-    if not 1 <= len(devices) <= 2:
-        raise ValueError("Phase 1 supports one or two candidate devices")
-    for d in devices:
-        if d["source"] != "simulated":
-            raise ValueError("every fixture device must be labeled simulated")
-        if d["budget_basis"] != "fresh_process_absolute":
-            raise ValueError("unsupported budget basis")
+    _check_phase1_limits(_parse_state(state))
     return state
 
 
