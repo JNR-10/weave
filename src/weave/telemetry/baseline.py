@@ -60,6 +60,28 @@ def sha(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def git_provenance(out: Path) -> dict[str, Any]:
+    """A commit hash alone hides uncommitted edits, so record whether the tree was dirty.
+
+    Git runs against the checkout that holds this module, not the working directory, so the
+    commit identifies the source that was actually imported. Untracked files are ignored; tracked
+    changes are saved beside the evidence so a dirty run still shows exactly what executed.
+    """
+    repo = Path(__file__).resolve().parents[3]
+    try:
+        commit = subprocess.check_output(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
+        diff = subprocess.check_output(
+            ["git", "-C", str(repo), "diff", "HEAD"], stderr=subprocess.DEVNULL, text=True
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return {"git_commit": None, "git_dirty": None}
+    if diff:
+        (out / "git-diff.patch").write_text(diff)
+    return {"git_commit": commit, "git_dirty": bool(diff)}
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--workload", required=True)
@@ -68,17 +90,20 @@ def main() -> int:
     p.add_argument("--device-id", required=True)
     p.add_argument("--token-trace", choices=["full", "boundary"], default="full")
     args = p.parse_args()
-    w = json.loads(Path(args.workload).read_text())
+    # Keep the exact input bytes: the copies in the run directory must match their hashes.
+    workload_bytes = Path(args.workload).read_bytes()
+    w = json.loads(workload_bytes)
     validate_workload(w)
-    lock = json.loads(Path(args.model_lock).read_text())
+    lock_bytes = Path(args.model_lock).read_bytes()
+    lock = json.loads(lock_bytes)
     if lock.get("schema_version") != VERSION or not re.fullmatch(
         r"[0-9a-f]{40}", lock.get("model_revision", "")
     ):
         raise ValueError("requires a real immutable model lock")
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=False)
-    (out / "workload.json").write_text(json.dumps(w, indent=2))
-    (out / "model-lock.json").write_text(json.dumps(lock, indent=2))
+    (out / "workload.json").write_bytes(workload_bytes)
+    (out / "model-lock.json").write_bytes(lock_bytes)
     summary = {
         "schema_version": VERSION,
         "run_id": out.name,
@@ -95,15 +120,10 @@ def main() -> int:
         "timing_definition": "instrumented stream callback wall time; includes tokenization; excludes model load",
         "token_count_definition": "MLX-LM generation_tokens, may include terminal EOS",
         "token_trace": args.token_trace,
-        "workload_sha256": sha(args.workload),
-        "model_lock_sha256": sha(args.model_lock),
+        "workload_sha256": hashlib.sha256(workload_bytes).hexdigest(),
+        "model_lock_sha256": hashlib.sha256(lock_bytes).hexdigest(),
+        **git_provenance(out),
     }
-    try:
-        summary["git_commit"] = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
-        ).strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        summary["git_commit"] = None
     if Path("experiments/phase1/requirements-m4-lock.txt").exists():
         summary["requirements_sha256"] = sha("experiments/phase1/requirements-m4-lock.txt")
     trace = (out / "trace.csv").open("x", newline="")

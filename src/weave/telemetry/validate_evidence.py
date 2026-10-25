@@ -2,8 +2,10 @@
 
 import argparse
 import csv
+import hashlib
 import json
 import math
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -14,13 +16,41 @@ def require(test: bool, message: str) -> None:
         raise ValueError(message)
 
 
+def close(value: Any, expected: float) -> bool:
+    return isinstance(value, (int, float)) and math.isfinite(value) and abs(value - expected) < 1e-6
+
+
 def validate(directory: str | Path) -> dict[str, Any]:
     root = Path(directory)
     s = json.loads((root / "run_summary.json").read_text())
     w = json.loads((root / "workload.json").read_text())
+    lock = json.loads((root / "model-lock.json").read_text())
     rows = list(csv.DictReader((root / "trace.csv").open()))
     require(s["schema_version"] == "2.0.0" and s["status"] == "success", "run did not succeed")
     require(s["simulation"] is False and s["source"] == "measured", "not measured evidence")
+    require(s["run_id"] == root.name, "run_id differs from the run directory name")
+    # The copied inputs define what ran, and counts below come from the workload copy, so an
+    # edit after the run must not pass silently.
+    for name, key in (
+        ("workload.json", "workload_sha256"),
+        ("model-lock.json", "model_lock_sha256"),
+    ):
+        digest = hashlib.sha256((root / name).read_bytes()).hexdigest()
+        require(digest == s.get(key), f"{name} differs from its recorded hash")
+    require(
+        w.get("schema_version") == "2.0.0" and w.get("workload_id") == s["workload_id"],
+        "workload copy does not match the run",
+    )
+    require(
+        lock.get("model_id") == s["model_id"] and lock.get("model_revision") == s["model_revision"],
+        "model lock copy does not match the run",
+    )
+    require(
+        isinstance(s.get("git_commit"), str)
+        and re.fullmatch(r"[0-9a-f]{40}", s["git_commit"]) is not None,
+        "missing source commit",
+    )
+    require(s.get("git_dirty") is False, "run used uncommitted source; commit, then rerun")
     require(bool(rows), "trace is empty")
     require([int(r["sequence"]) for r in rows] == list(range(len(rows))), "sequence gap/duplicate")
     times = [int(r["monotonic_ns"]) for r in rows]
@@ -59,13 +89,16 @@ def validate(directory: str | Path) -> dict[str, Any]:
         if r["request_id"]:
             groups[r["request_id"]].append(r)
     requests = s["requests"]
-    require(len(requests) == w["warmup_requests"] + w["measured_requests"], "wrong request count")
+    # Request order is checked against time below, so this also fixes warmups before measurement.
+    require(
+        [q["request_kind"] for q in requests]
+        == ["warmup"] * w["warmup_requests"] + ["measured"] * w["measured_requests"],
+        "warmup/measured counts or order differ from the workload",
+    )
     require(len({q["request_id"] for q in requests}) == len(requests), "duplicate summary request")
     require(set(groups) == {q["request_id"] for q in requests}, "request IDs differ")
-    require(
-        sum(q["request_kind"] == "measured" for q in requests) == w["measured_requests"],
-        "wrong measured count",
-    )
+    mode = s.get("token_trace", "full")
+    require(mode in {"full", "boundary"}, "unknown token trace mode")
     previous_end = -1
     for q in requests:
         rs = groups[q["request_id"]]
@@ -91,9 +124,16 @@ def validate(directory: str | Path) -> dict[str, Any]:
             "request order/overlap",
         )
         previous_end = end
-        token_counts = [int(r["token_count"]) for r in rs if r["event"] == "token"]
-        mode = s.get("token_trace", "full")
-        require(mode in {"full", "boundary"}, "unknown token trace mode")
+        visible = int(by_event["first_visible_text"]["monotonic_ns"])
+        require(start <= visible <= end, "first visible text outside its request")
+        # Boundary mode has no token rows, so these two rows are its only token-count evidence.
+        require(by_event["first_token"]["token_count"] == "1", "first_token is not token 1")
+        require(
+            by_event["request_end"]["token_count"] == str(q["generation_tokens"]),
+            "request_end token count differs from summary",
+        )
+        token_rows = [r for r in rs if r["event"] == "token"]
+        token_counts = [int(r["token_count"]) for r in token_rows]
         expected_counts = list(range(1, q["generation_tokens"] + 1)) if mode == "full" else []
         require(token_counts == expected_counts, "token counter gap/duplicate or wrong trace mode")
         require(
@@ -117,10 +157,17 @@ def validate(directory: str | Path) -> dict[str, Any]:
         for key, expected in (
             ("ttft_ms", (first - start) / 1e6),
             ("end_to_end_ms", (end - start) / 1e6),
+            ("first_visible_text_ms", (visible - start) / 1e6),
         ):
+            require(close(q.get(key), expected), f"summary/trace mismatch: {key}")
+        # The last token time is only in the trace in full mode; boundary mode cannot check this.
+        if mode == "full":
+            n = q["generation_tokens"]
+            last = int(token_rows[-1]["monotonic_ns"])
+            tpot = q.get("observed_tpot_ms")
             require(
-                math.isfinite(q[key]) and abs(q[key] - expected) < 1e-6,
-                f"summary/trace mismatch: {key}",
+                tpot is None if n == 1 else close(tpot, (last - first) / (n - 1) / 1e6),
+                "summary/trace mismatch: observed_tpot_ms",
             )
         require(q["request_peak_mlx_bytes"] > 0, "missing MLX peak")
     return {
