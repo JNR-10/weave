@@ -61,6 +61,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 - Phase 1 runbook: `docs/Initial_Implementation_Guide.md` (rank mapping in section 7, evidence
   rules in section 8, gates in section 12).
 - Interface 2.0.0 contract (draft): `meetings/phase1-interface-freeze.md`.
+- Feature specs and their step plans: `docs/specs/`. Read the relevant spec before changing that
+  feature.
 
 ## Keeping this file useful
 
