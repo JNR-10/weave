@@ -88,6 +88,13 @@ def test_memory_grows_with_context_and_single_node_state():
         lambda s: s["devices"][0].update(workspace_reserve_bytes=0),
         lambda s: s["devices"][1].update(device_id=s["devices"][0]["device_id"]),
         lambda s: s["request_envelope"].update(concurrency=2),
+        # Missing fields and wrong JSON types must also be ValueError, not KeyError/TypeError.
+        lambda s: s["model"].pop("source"),
+        lambda s: s.pop("devices"),
+        lambda s: s.update(model=[]),
+        lambda s: s.update(devices={"SIMULATED-m4-pressure": {}}),
+        lambda s: s["devices"][0].pop("budget_basis"),
+        lambda s: s["request_envelope"].pop("max_new_tokens"),
     ],
 )
 def test_invalid_state_fails_closed(mutation):
@@ -95,6 +102,12 @@ def test_invalid_state_fails_closed(mutation):
     mutation(s)
     with pytest.raises(ValueError):
         validate_state(s)
+
+
+def test_unknown_device_in_order_rejected():
+    s = make_state()
+    with pytest.raises(ValueError, match="not in the state"):
+        evaluate(["SIMULATED-m4-pressure", "SIMULATED-unknown"], [10, 18], s)
 
 
 def test_invalid_split_and_workload_rejected():

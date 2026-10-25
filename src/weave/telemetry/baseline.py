@@ -3,6 +3,7 @@
 import argparse
 import csv
 import hashlib
+import importlib.metadata
 import json
 import platform
 import re
@@ -60,6 +61,76 @@ def sha(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def source_checkout() -> Path | None:
+    """The checkout this module was imported from, or None when it runs from an installed copy.
+
+    Without this check, a non-editable install inside the repo's .venv would make git describe
+    the enclosing checkout rather than the copy that actually ran.
+    """
+    here = Path(__file__).resolve()
+    repo = here.parents[3]
+    return repo if repo / "src/weave/telemetry/baseline.py" == here else None
+
+
+def importable(path: str) -> bool:
+    p = Path(path)
+    return p.suffix in {".py", ".so", ".pyc"} and "__pycache__" not in p.parts
+
+
+def git_provenance(repo: Path | None, out: Path) -> dict[str, Any]:
+    """A commit hash alone hides uncommitted edits, so record whether the source was dirty.
+
+    Tracked changes are saved beside the evidence as git-diff.patch. Untracked importable files
+    under src/ also count, ignored ones included (.gitignore matches models/, env/ and build/
+    at any depth), and are copied under git-untracked/, so a dirty run still shows what
+    executed. This runs before the trace exists, so it reports unknown provenance rather than
+    raising.
+    """
+    unknown = {"git_commit": None, "git_dirty": None, "git_untracked_source": None}
+    if repo is None:
+        return unknown
+
+    def git(*argv: str) -> bytes:
+        return subprocess.check_output(["git", "-C", str(repo), *argv], stderr=subprocess.DEVNULL)
+
+    try:
+        # A copy vendored inside another repository is not a checkout of its own.
+        if Path(git("rev-parse", "--show-toplevel").decode().strip()).resolve() != repo.resolve():
+            return unknown
+        commit = git("rev-parse", "HEAD").decode().strip()
+        diff = git("diff", "HEAD")
+        listed = git("ls-files", "-z", "--others", "--", "src").decode(errors="replace")
+        untracked = sorted(p for p in listed.split("\0") if p and importable(p))
+        if diff:
+            (out / "git-diff.patch").write_bytes(diff)
+        for p in untracked:
+            copy = out / "git-untracked" / p
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            copy.write_bytes((repo / p).read_bytes())
+    except (subprocess.CalledProcessError, OSError):
+        return unknown
+    return {
+        "git_commit": commit,
+        "git_dirty": bool(diff or untracked),
+        "git_untracked_source": untracked,
+    }
+
+
+def environment() -> dict[str, Any]:
+    """Record what actually ran; a hash of the committed lock file only says what should have."""
+    packages = {}
+    for dist in importlib.metadata.distributions():
+        if dist.metadata["Name"]:
+            packages[re.sub(r"[-_.]+", "-", dist.metadata["Name"]).lower()] = dist.version
+    return {
+        "python": platform.python_version(),
+        "system": platform.system(),
+        "machine": platform.machine(),
+        "macos": platform.mac_ver()[0] or None,
+        "packages": dict(sorted(packages.items())),
+    }
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--workload", required=True)
@@ -68,17 +139,21 @@ def main() -> int:
     p.add_argument("--device-id", required=True)
     p.add_argument("--token-trace", choices=["full", "boundary"], default="full")
     args = p.parse_args()
-    w = json.loads(Path(args.workload).read_text())
+    # Keep the exact input bytes: the copies in the run directory must match their hashes.
+    workload_bytes = Path(args.workload).read_bytes()
+    w = json.loads(workload_bytes)
     validate_workload(w)
-    lock = json.loads(Path(args.model_lock).read_text())
+    lock_bytes = Path(args.model_lock).read_bytes()
+    lock = json.loads(lock_bytes)
     if lock.get("schema_version") != VERSION or not re.fullmatch(
         r"[0-9a-f]{40}", lock.get("model_revision", "")
     ):
         raise ValueError("requires a real immutable model lock")
+    repo = source_checkout()
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=False)
-    (out / "workload.json").write_text(json.dumps(w, indent=2))
-    (out / "model-lock.json").write_text(json.dumps(lock, indent=2))
+    (out / "workload.json").write_bytes(workload_bytes)
+    (out / "model-lock.json").write_bytes(lock_bytes)
     summary = {
         "schema_version": VERSION,
         "run_id": out.name,
@@ -95,17 +170,15 @@ def main() -> int:
         "timing_definition": "instrumented stream callback wall time; includes tokenization; excludes model load",
         "token_count_definition": "MLX-LM generation_tokens, may include terminal EOS",
         "token_trace": args.token_trace,
-        "workload_sha256": sha(args.workload),
-        "model_lock_sha256": sha(args.model_lock),
+        "workload_sha256": hashlib.sha256(workload_bytes).hexdigest(),
+        "model_lock_sha256": hashlib.sha256(lock_bytes).hexdigest(),
+        **git_provenance(repo, out),
+        "environment": environment(),
     }
-    try:
-        summary["git_commit"] = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
-        ).strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        summary["git_commit"] = None
-    if Path("experiments/phase1/requirements-m4-lock.txt").exists():
-        summary["requirements_sha256"] = sha("experiments/phase1/requirements-m4-lock.txt")
+    # Same checkout as the git record, not the working directory, so both describe one tree.
+    requirements = repo / "experiments/phase1/requirements-m4-lock.txt" if repo else None
+    if requirements and requirements.exists():
+        summary["requirements_sha256"] = sha(requirements)
     trace = (out / "trace.csv").open("x", newline="")
     writer = csv.DictWriter(trace, fieldnames=FIELDS)
     writer.writeheader()
@@ -164,8 +237,13 @@ def main() -> int:
             }
 
         model_dir = Path(lock["model_dir"])
-        if sha(model_dir / "config.json") != lock["config_sha256"]:
+        config_bytes = (model_dir / "config.json").read_bytes()
+        if hashlib.sha256(config_bytes).hexdigest() != lock["config_sha256"]:
             raise ValueError("model config differs from the lock")
+        # Geometry comes from the hashed file, so the lock's embedded copy must agree with it.
+        config = json.loads(config_bytes)
+        if config != lock["config"]:
+            raise ValueError("model lock's embedded config differs from config.json")
         mx.random.seed(w["seed"])
         mx.reset_peak_memory()
         event("model_load_start")
@@ -178,8 +256,11 @@ def main() -> int:
             model.parameters(),
             model_id=lock["model_id"],
             model_revision=lock["model_revision"],
-            total_layers=lock["config"]["num_hidden_layers"],
+            config_sha256=lock["config_sha256"],
+            total_layers=config["num_hidden_layers"],
         )
+        profile["source_run_id"] = out.name
+        summary["profile_id"] = profile["profile_id"]
         (out / "model_profile.json").write_text(json.dumps(profile, indent=2))
         for index in range(w["warmup_requests"] + w["measured_requests"]):
             request_kind = "warmup" if index < w["warmup_requests"] else "measured"
@@ -194,7 +275,7 @@ def main() -> int:
             )
             if not 0 < len(tokens) <= w["prompt_max_tokens"]:
                 raise ValueError("actual tokenized prompt exceeds the frozen workload envelope")
-            if len(tokens) + w["max_new_tokens"] > lock["config"]["max_position_embeddings"]:
+            if len(tokens) + w["max_new_tokens"] > config["max_position_embeddings"]:
                 raise ValueError("request exceeds model context limit")
             first, first_text, last_token, previous, pieces, last = None, None, None, 0, [], None
             for response in stream_generate(
