@@ -61,6 +61,12 @@ def test_kv_bound_grows_with_concurrency():
     assert result["kv_upper_bound_bytes"] == 70_778_880
 
 
+def test_kv_bound_grows_with_context():
+    # A doubled token envelope (1,152 tokens) doubles the cache: 2*10*1152*4*128*4.
+    result = estimate_stage_memory(**pressure_mac_10_layers(total_tokens=1152))
+    assert result["kv_upper_bound_bytes"] == 47_185_920
+
+
 def test_unequal_layers_are_summed_and_each_holds_a_cache():
     # 5 + 7 + 11 = 23 bytes of weights; KV = 2 * 3 layers * 576 * 4 * 128 * 4.
     result = estimate_stage_memory(**pressure_mac_10_layers(layer_weight_bytes=[5, 7, 11]))
