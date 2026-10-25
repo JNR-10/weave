@@ -82,6 +82,16 @@ docs/            project proposal and design documents
 meetings/        weekly team and advisor meeting notes
 ```
 
+## Development
+
+```sh
+make setup      # portable environment, any Mac, no MLX (make setup-m4 on Apple Silicon)
+make check      # lint, format check and tests; CI runs the same on every push
+```
+
+Coding agents start from [AGENTS.md](AGENTS.md); measured runs follow
+[experiments/phase1/README.md](experiments/phase1/README.md).
+
 ## Roadmap
 
 - [ ] **M1 — Reproduce state of the art.** Configure MLX distributed, test JACCL/RING, run Exo, benchmark one/two/three Macs. *Milestone: reproducible baseline for our actual cluster.*
