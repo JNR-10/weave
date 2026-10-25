@@ -25,21 +25,16 @@ def check_geometry(config: dict[str, Any]) -> None:
         raise ValueError("expected 4-bit converted model")
 
 
-def digest(path: Path, h: Any) -> str:
-    """Feed a file to a hash in chunks; the 4.3 GB weight file must not be read into memory."""
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def file_sha256(path: Path) -> str:
-    return digest(path, hashlib.sha256())
+    with path.open("rb") as f:
+        return hashlib.file_digest(f, "sha256").hexdigest()
 
 
 def git_blob_sha1(path: Path) -> str:
     """Git's object id for a regular (non-LFS) file, which the hub reports as blob_id."""
-    return digest(path, hashlib.sha1(f"blob {path.stat().st_size}\0".encode()))
+    header = f"blob {path.stat().st_size}\0".encode()
+    with path.open("rb") as f:
+        return hashlib.file_digest(f, lambda: hashlib.sha1(header)).hexdigest()
 
 
 def expected_files(siblings: list[Any]) -> dict[str, dict[str, Any]]:
@@ -150,9 +145,9 @@ def main() -> None:
     snapshot_download(repo_id=args.repo, revision=revision, local_dir=str(model_dir))
     report = verify_snapshot(model_dir, expected)
     damaged = [name for name in failures(report) if name in expected]
-    if args.resume and damaged:
-        # snapshot_download skips files its local metadata marks complete, even when damaged,
-        # so fetch the failing files again once. Stray weight files must be removed by hand.
+    if damaged:
+        # snapshot_download can skip a file its local metadata marks complete even when it is
+        # damaged, so fetch failing files again once. Stray weight files must be removed by hand.
         for name in damaged:
             hf_hub_download(
                 args.repo, name, revision=revision, local_dir=str(model_dir), force_download=True

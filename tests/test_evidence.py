@@ -4,6 +4,7 @@ import csv
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
 import re
 import subprocess
@@ -300,20 +301,25 @@ def test_run_directory_given_as_dot(tmp_path, monkeypatch):
     assert validate(".")["status"] == "PASS"
 
 
-def git_repo(root):
-    def git(*argv):
-        subprocess.run(
-            ["git", "-c", "user.name=t", "-c", "user.email=t@t", *argv],
-            cwd=root,
-            check=True,
-            capture_output=True,
-        )
+def git(root, *argv):
+    """Isolated from global git config, so signing or hooks on a dev machine cannot interfere."""
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", *argv],
+        cwd=root,
+        env=env,
+        check=True,
+        capture_output=True,
+    )
 
+
+def git_repo(root):
     (root / "src").mkdir(parents=True)
     (root / "src/tracked.py").write_bytes(b"x = 1\n")
-    git("init", "-q")
-    git("add", ".")
-    git("commit", "-q", "-m", "init")
+    (root / ".gitignore").write_text("models/\n__pycache__/\n.DS_Store\n")
+    git(root, "init", "-q")
+    git(root, "add", ".")
+    git(root, "commit", "-q", "-m", "init")
     return root
 
 
@@ -330,8 +336,16 @@ def test_untracked_source_counts_as_dirty(tmp_path):
     repo, out = git_repo(tmp_path / "repo"), tmp_path / "out"
     out.mkdir()
     (repo / "src/new_helper.py").write_text("y = 2\n")
+    (repo / "src/models").mkdir()
+    (repo / "src/models/hack.py").write_text("z = 3\n")  # ignored by models/, still importable
+    (repo / "src/__pycache__").mkdir()
+    (repo / "src/__pycache__/tracked.cpython-311.pyc").write_bytes(b"cache")
+    (repo / "src/.DS_Store").write_bytes(b"finder")
     p = baseline.git_provenance(repo, out)
-    assert p["git_dirty"] is True and p["git_untracked_source"] == ["src/new_helper.py"]
+    assert p["git_dirty"] is True
+    assert p["git_untracked_source"] == ["src/models/hack.py", "src/new_helper.py"]
+    assert (out / "git-untracked/src/models/hack.py").read_text() == "z = 3\n"
+    assert not (out / "git-diff.patch").exists()  # dirty without any tracked change
 
 
 def test_non_utf8_change_is_recorded_not_raised(tmp_path):
@@ -343,8 +357,18 @@ def test_non_utf8_change_is_recorded_not_raised(tmp_path):
     assert b"\xff\xfe" in (out / "git-diff.patch").read_bytes()
 
 
+UNKNOWN = {"git_commit": None, "git_dirty": None, "git_untracked_source": None}
+
+
+def test_vendored_copy_inside_another_repo_is_unknown(tmp_path):
+    outer = git_repo(tmp_path / "outer")
+    vendored = outer / "third_party/weave"
+    (vendored / "src").mkdir(parents=True)
+    assert baseline.git_provenance(vendored, tmp_path) == UNKNOWN
+
+
 def test_installed_copy_has_unknown_provenance(tmp_path):
-    assert baseline.git_provenance(None, tmp_path) == {"git_commit": None, "git_dirty": None}
+    assert baseline.git_provenance(None, tmp_path) == UNKNOWN
     assert baseline.source_checkout() == ROOT  # this suite runs from the editable checkout
 
 
@@ -399,7 +423,11 @@ def test_runner_records_exact_inputs_and_source(tmp_path, monkeypatch):
         assert summary["git_dirty"] is None
     else:
         assert re.fullmatch(r"[0-9a-f]{40}", summary["git_commit"])
-        assert (out / "git-diff.patch").exists() is summary["git_dirty"]
+        # A patch means tracked changes; dirty can also come from untracked source alone.
+        if (out / "git-diff.patch").exists():
+            assert summary["git_dirty"] is True
+        if summary["git_dirty"] is False:
+            assert not (out / "git-diff.patch").exists()
     env = summary["environment"]
     assert env["python"] == platform.python_version()
     assert env["packages"]["pytest"] == importlib.metadata.version("pytest")

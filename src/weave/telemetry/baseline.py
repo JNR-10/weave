@@ -72,32 +72,47 @@ def source_checkout() -> Path | None:
     return repo if repo / "src/weave/telemetry/baseline.py" == here else None
 
 
+def importable(path: str) -> bool:
+    p = Path(path)
+    return p.suffix in {".py", ".so", ".pyc"} and "__pycache__" not in p.parts
+
+
 def git_provenance(repo: Path | None, out: Path) -> dict[str, Any]:
     """A commit hash alone hides uncommitted edits, so record whether the source was dirty.
 
-    Tracked changes are saved beside the evidence so a dirty run still shows what executed.
-    Untracked files under src/ also count, since the package could import them. This runs
-    before the trace exists, so it reports unknown provenance rather than raising.
+    Tracked changes are saved beside the evidence as git-diff.patch. Untracked importable files
+    under src/ also count, ignored ones included (.gitignore matches models/, env/ and build/
+    at any depth), and are copied under git-untracked/, so a dirty run still shows what
+    executed. This runs before the trace exists, so it reports unknown provenance rather than
+    raising.
     """
+    unknown = {"git_commit": None, "git_dirty": None, "git_untracked_source": None}
     if repo is None:
-        return {"git_commit": None, "git_dirty": None}
+        return unknown
 
     def git(*argv: str) -> bytes:
         return subprocess.check_output(["git", "-C", str(repo), *argv], stderr=subprocess.DEVNULL)
 
     try:
+        # A copy vendored inside another repository is not a checkout of its own.
+        if Path(git("rev-parse", "--show-toplevel").decode().strip()).resolve() != repo.resolve():
+            return unknown
         commit = git("rev-parse", "HEAD").decode().strip()
         diff = git("diff", "HEAD")
-        untracked = git("ls-files", "-z", "--others", "--exclude-standard", "--", "src")
+        listed = git("ls-files", "-z", "--others", "--", "src").decode(errors="replace")
+        untracked = sorted(p for p in listed.split("\0") if p and importable(p))
         if diff:
             (out / "git-diff.patch").write_bytes(diff)
+        for p in untracked:
+            copy = out / "git-untracked" / p
+            copy.parent.mkdir(parents=True, exist_ok=True)
+            copy.write_bytes((repo / p).read_bytes())
     except (subprocess.CalledProcessError, OSError):
-        return {"git_commit": None, "git_dirty": None}
-    untracked_source = [p for p in untracked.decode(errors="replace").split("\0") if p]
+        return unknown
     return {
         "git_commit": commit,
-        "git_dirty": bool(diff or untracked_source),
-        "git_untracked_source": untracked_source,
+        "git_dirty": bool(diff or untracked),
+        "git_untracked_source": untracked,
     }
 
 
