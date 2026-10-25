@@ -56,13 +56,67 @@ def _boolean(obj: dict[str, Any], key: str, parent: str) -> bool:
     return value
 
 
+def _positive_int(value: Any, path: str) -> int:
+    # bool is a subclass of int in Python, so `type(...) is int` keeps true/false out.
+    if type(value) is not int or value < 1:
+        raise ValueError(f"{path}: expected a positive integer, got {value!r}")
+    return value
+
+
+def _positive_field(obj: dict[str, Any], key: str, parent: str) -> int:
+    return _positive_int(_get(obj, key, parent), _path(parent, key))
+
+
+@dataclass(frozen=True)
+class _ModelProfile:
+    """Per-layer and replicated weight bytes plus the KV-cache geometry the estimate needs."""
+
+    model_id: str
+    model_revision: str
+    profile_id: str
+    layer_weight_bytes: tuple[int, ...]
+    replicated_weight_bytes: int
+    kv_heads: int
+    head_dim: int
+    kv_bytes_per_element: int
+    source: str
+
+    @property
+    def total_layers(self) -> int:
+        return len(self.layer_weight_bytes)
+
+
+def _parse_model(model: dict[str, Any]) -> _ModelProfile:
+    total = _positive_field(model, "total_layers", "model")
+    weights = _get(model, "layer_weight_bytes", "model")
+    if not isinstance(weights, list):
+        raise ValueError(f"model.layer_weight_bytes: expected a list, got {type(weights).__name__}")
+    if len(weights) != total:
+        raise ValueError(
+            f"model.layer_weight_bytes: expected one entry per layer ({total}), got {len(weights)}"
+        )
+    return _ModelProfile(
+        model_id=_text(model, "model_id", "model"),
+        model_revision=_text(model, "model_revision", "model"),
+        profile_id=_text(model, "profile_id", "model"),
+        layer_weight_bytes=tuple(
+            _positive_int(n, f"model.layer_weight_bytes[{i}]") for i, n in enumerate(weights)
+        ),
+        replicated_weight_bytes=_positive_field(model, "replicated_weight_bytes", "model"),
+        kv_heads=_positive_field(model, "kv_heads", "model"),
+        head_dim=_positive_field(model, "head_dim", "model"),
+        kv_bytes_per_element=_positive_field(model, "kv_bytes_per_element", "model"),
+        source=_text(model, "source", "model"),
+    )
+
+
 @dataclass(frozen=True)
 class _ClusterState:
     """The cluster state after its one read; planning trusts these fields without re-checking."""
 
     snapshot_id: str
     simulation: bool
-    model: dict[str, Any]
+    model: _ModelProfile
     request: dict[str, Any]
     devices: tuple[dict[str, Any], ...]
 
@@ -76,7 +130,7 @@ def _parse_state(raw: Any) -> _ClusterState:
         )
     snapshot_id = _text(state, "snapshot_id", "")
     simulation = _boolean(state, "simulation", "")
-    model = _object(_get(state, "model", ""), "model")
+    model = _parse_model(_object(_get(state, "model", ""), "model"))
     request = _object(_get(state, "request_envelope", ""), "request_envelope")
     devices = _get(state, "devices", "")
     if not isinstance(devices, list):
@@ -103,17 +157,6 @@ def _check_state(state: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(state.get("snapshot_id"), str) or not state["snapshot_id"]:
         raise ValueError("snapshot_id is required")
     model, req = state["model"], state["request_envelope"]
-    for key in ("model_id", "model_revision", "profile_id"):
-        if not isinstance(model.get(key), str) or not model[key]:
-            raise ValueError(f"model.{key} is required")
-    total = positive_int(model["total_layers"], "total_layers")
-    weights = model["layer_weight_bytes"]
-    if not isinstance(weights, list) or len(weights) != total:
-        raise ValueError("layer_weight_bytes must contain one entry per layer")
-    for n in weights:
-        positive_int(n, "layer_weight_bytes entry")
-    for key in ("replicated_weight_bytes", "kv_heads", "head_dim", "kv_bytes_per_element"):
-        positive_int(model[key], key)
     if model["source"] != "simulated":
         raise ValueError("fixture model profile must be labeled simulated")
     for key in ("prompt_tokens_upper_bound", "max_new_tokens", "concurrency"):

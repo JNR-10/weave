@@ -42,3 +42,29 @@ def test_bad_top_level_field_is_named(path, mutate):
     mutate(state)
     with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
         validate_state(state)
+
+
+MODEL = [
+    ("model.model_id", lambda m: m.update(model_id="")),
+    ("model.model_revision", lambda m: m.pop("model_revision")),
+    ("model.profile_id", lambda m: m.update(profile_id=5)),
+    ("model.total_layers", lambda m: m.update(total_layers=True)),
+    ("model.total_layers", lambda m: m.update(total_layers=0)),
+    ("model.layer_weight_bytes", lambda m: m.update(layer_weight_bytes="128MiB")),
+    ("model.layer_weight_bytes", lambda m: m.update(layer_weight_bytes=[2**27] * 27)),
+    ("model.layer_weight_bytes[3]", lambda m: m["layer_weight_bytes"].__setitem__(3, 0)),
+    ("model.layer_weight_bytes[0]", lambda m: m["layer_weight_bytes"].__setitem__(0, True)),
+    ("model.replicated_weight_bytes", lambda m: m.update(replicated_weight_bytes=0)),
+    ("model.kv_heads", lambda m: m.update(kv_heads=-1)),
+    ("model.head_dim", lambda m: m.update(head_dim=1.5)),
+    ("model.kv_bytes_per_element", lambda m: m.pop("kv_bytes_per_element")),
+    ("model.source", lambda m: m.pop("source")),
+]
+
+
+@pytest.mark.parametrize("path, mutate", MODEL)
+def test_bad_model_field_is_named(path, mutate):
+    state = make_state()
+    mutate(state["model"])
+    with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
+        validate_state(state)
