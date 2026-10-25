@@ -10,6 +10,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from weave.profiler.model_profile import profile_id
+
 
 def require(test: bool, message: str) -> None:
     if not test:
@@ -59,6 +61,31 @@ def validate(directory: str | Path) -> dict[str, Any]:
         and bool(packages.get("mlx"))
         and bool(packages.get("mlx-lm")),
         "environment not recorded as native Apple Silicon with MLX",
+    )
+    # The measured profile is the hand-off to the estimator, so it must describe this run's model.
+    require((root / "model_profile.json").is_file(), "model_profile.json is missing")
+    profile = json.loads((root / "model_profile.json").read_text())
+    layers = profile.get("layer_weight_bytes")
+    require(
+        profile.get("schema_version") == "2.0.0"
+        and profile.get("source") == "measured"
+        and profile.get("model_id") == s["model_id"]
+        and profile.get("model_revision") == s["model_revision"]
+        and profile.get("config_sha256") == lock.get("config_sha256"),
+        "model profile does not describe this run's model",
+    )
+    require(
+        isinstance(layers, list)
+        and len(layers) == lock.get("config", {}).get("num_hidden_layers")
+        and all(type(n) is int and n > 0 for n in layers)
+        and profile.get("replicated_weight_bytes")
+        == sum(profile.get("replicated_tensor_bytes", {}).values())
+        > 0,
+        "model profile byte tallies incomplete",
+    )
+    require(
+        profile.get("profile_id") == profile_id(profile) == s.get("profile_id"),
+        "model profile ID does not match its content or the summary",
     )
     require(bool(rows), "trace is empty")
     require([int(r["sequence"]) for r in rows] == list(range(len(rows))), "sequence gap/duplicate")

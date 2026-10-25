@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from weave.profiler.model_profile import profile_from_tensor_bytes
 from weave.telemetry import baseline
 from weave.telemetry.baseline import FIELDS
 from weave.telemetry.validate_evidence import validate
@@ -49,6 +50,8 @@ def write_fake(root):
             "schema_version": "2.0.0",
             "model_id": "fake/model",
             "model_revision": "a" * 40,
+            "config_sha256": "e" * 64,
+            "config": {"num_hidden_layers": 2},
         },
     }
     hashes = {}
@@ -56,6 +59,14 @@ def write_fake(root):
         raw = json.dumps(data).encode()
         (root / name).write_bytes(raw)
         hashes[HASH_KEYS[name]] = hashlib.sha256(raw).hexdigest()
+    profile = profile_from_tensor_bytes(
+        [("model.layers.0.w", 8), ("model.layers.1.w", 8), ("model.embed_tokens.weight", 4)],
+        model_id="fake/model",
+        model_revision="a" * 40,
+        config_sha256="e" * 64,
+        total_layers=2,
+    )
+    (root / "model_profile.json").write_text(json.dumps(profile))
     identity = {
         "run_id": root.name,
         "device_id": "fake",
@@ -111,6 +122,7 @@ def write_fake(root):
         "token_trace": "full",
         "git_commit": "b" * 40,
         "git_dirty": False,
+        "profile_id": profile["profile_id"],
         "environment": {
             "python": "3.11.17",
             "system": "Darwin",
@@ -246,6 +258,19 @@ CORRUPTIONS = {
         "native Apple Silicon",
     ),
     "no_environment": (lambda root, s, r: s.pop("environment"), "native Apple Silicon"),
+    "no_profile": (lambda root, s, r: (root / "model_profile.json").unlink(), "is missing"),
+    "profile_edited": (
+        lambda root, s, r: edit_input(root, s, "model_profile.json", layer_weight_bytes=[8, 9]),
+        "profile ID does not match",
+    ),
+    "profile_other_model": (
+        lambda root, s, r: edit_input(root, s, "model_profile.json", model_revision="c" * 40),
+        "does not describe this run's model",
+    ),
+    "profile_missing_layer": (
+        lambda root, s, r: edit_input(root, s, "model_profile.json", layer_weight_bytes=[8]),
+        "byte tallies incomplete",
+    ),
 }
 
 

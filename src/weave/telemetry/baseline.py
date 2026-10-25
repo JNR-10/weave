@@ -220,8 +220,11 @@ def main() -> int:
             model.parameters(),
             model_id=lock["model_id"],
             model_revision=lock["model_revision"],
+            config_sha256=lock["config_sha256"],
             total_layers=config["num_hidden_layers"],
         )
+        profile["source_run_id"] = out.name
+        summary["profile_id"] = profile["profile_id"]
         (out / "model_profile.json").write_text(json.dumps(profile, indent=2))
         for index in range(w["warmup_requests"] + w["measured_requests"]):
             request_kind = "warmup" if index < w["warmup_requests"] else "measured"
