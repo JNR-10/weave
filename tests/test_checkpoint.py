@@ -149,3 +149,17 @@ def test_default_results_folder_is_the_repositorys_own(tmp_path, monkeypatch, ca
         for folder in made:  # only the test's own output
             shutil.rmtree(folder)
     assert (len(made), list(tmp_path.iterdir())) == (1, [])
+
+
+def test_package_was_validated_against_the_committed_schema_files(real_run):
+    # The committed files are the 2.0.0 contract; regenerated schemas are not.
+    _, _, out = real_run
+    schema_dir = ROOT / "experiments/phase1/schemas/v2"
+    recorded = json.loads((out / "checkpoint.json").read_text())["schema_files"]
+    assert {name: entry["sha256"] for name, entry in recorded.items()} == {
+        name: hashlib.sha256((schema_dir / f"{file}.schema.json").read_bytes()).hexdigest()
+        for name, file in (
+            ("cluster_state", "cluster_state_simulated"),
+            ("candidate_set", "candidate_set"),
+        )
+    }

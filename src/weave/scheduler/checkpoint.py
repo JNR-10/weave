@@ -19,11 +19,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from weave.contracts.schemas import build_schemas
 from weave.scheduler.candidates import generate
 from weave.telemetry.baseline import git_provenance, source_checkout
 
 DEFAULT_STATE = Path("experiments/phase1/cluster-state-SIMULATED.json")
+SCHEMA_DIR = Path("experiments/phase1/schemas/v2")
 # The planner's own suites (spec 0001). This command's tests are deliberately not listed, so
 # running the suite can never start this command again.
 PLANNER_TESTS = (
@@ -54,25 +54,43 @@ def run_planner_suite() -> SuiteResult:
     return SuiteResult(done.returncode == 0, done.stdout + done.stderr, command)
 
 
-def _validate_schemas(state: Any, candidate_set: dict[str, Any]) -> dict[str, str]:
-    """Check both documents against the 2.0.0 contract; a missing validator is a failure."""
+def _validate_schemas(
+    state_file: Path, candidate_file: Path
+) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    """Check the files as written against the committed 2.0.0 schema files.
+
+    The committed schema bytes are the contract, so they are what this checks against, and each
+    one's hash is recorded. A missing validator or schema file is a failure, never a skip.
+    """
+    checks = (
+        ("cluster_state", "cluster_state_simulated", state_file),
+        ("candidate_set", "candidate_set", candidate_file),
+    )
     try:
         import jsonschema
     except ImportError:
         missing = "fail: jsonschema is not installed; run make setup"
-        return {"cluster_state": missing, "candidate_set": missing}
-    schemas = build_schemas()
-    results = {}
-    for name, schema_name, document in (
-        ("cluster_state", "cluster_state_simulated", state),
-        ("candidate_set", "candidate_set", candidate_set),
-    ):
+        return {name: missing for name, _, _ in checks}, {}
+    repo = source_checkout()
+    results: dict[str, str] = {}
+    schema_files: dict[str, dict[str, str]] = {}
+    for name, schema_name, document in checks:
+        relative = SCHEMA_DIR / f"{schema_name}.schema.json"
+        schema_path = repo / relative if repo else None
+        if schema_path is None or not schema_path.is_file():
+            results[name] = f"fail: committed schema {relative} not found"
+            continue
+        schema_bytes = schema_path.read_bytes()
+        schema_files[name] = {
+            "file": str(relative),
+            "sha256": hashlib.sha256(schema_bytes).hexdigest(),
+        }
         try:
-            jsonschema.validate(document, schemas[schema_name])
+            jsonschema.validate(json.loads(document.read_text()), json.loads(schema_bytes))
             results[name] = "pass"
         except jsonschema.ValidationError as exc:
             results[name] = f"fail: {exc.message}"
-    return results
+    return results, schema_files
 
 
 def _gib(n: int) -> str:
@@ -215,7 +233,9 @@ def run(
     candidate_file = output_dir / "candidate_plans.json"
     with candidate_file.open("x") as f:
         json.dump(candidate_set, f, indent=2)
-    schema_validation = _validate_schemas(state, candidate_set)
+    schema_validation, schema_files = _validate_schemas(
+        output_dir / state_path.name, candidate_file
+    )
     suite = (run_suite or run_planner_suite)()
     (output_dir / "planner-tests.txt").write_text(suite.output)
     demo_lines, demo = _demo(candidate_set)
@@ -231,6 +251,7 @@ def run(
         "candidate_count": candidate_set["candidate_count"],
         "memory_feasible_count": candidate_set["memory_feasible_count"],
         "schema_validation": schema_validation,
+        "schema_files": schema_files,
         "planner_tests": {"passed": suite.passed, "command": suite.command},
         **git_provenance(source_checkout(), output_dir),
         "demo": demo,
