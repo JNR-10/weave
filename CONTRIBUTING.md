@@ -69,6 +69,10 @@ Experiment results are evidence for the report, so they need to be reproducible.
 ## Code
 
 - Python, formatted with `ruff format`, linted with `ruff`.
+- Run `make check` before pushing; CI runs the same command on every push and pull request.
+  `make fmt` applies fixes, and `make hooks` (optional) runs the fast checks on each commit.
+- Coding agents read [AGENTS.md](AGENTS.md). When an agent repeats a mistake, add one line
+  there in the same pull request.
 - Type-hint public functions.
 - Docstrings explain *why* a decision is made, not what the line does — the scheduler's reasoning
   is the research contribution and needs to be legible to a reader six months from now.

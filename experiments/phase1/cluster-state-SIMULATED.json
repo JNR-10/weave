@@ -1,0 +1,69 @@
+{
+  "schema_version": "2.0.0",
+  "snapshot_id": "SIMULATED-qwen7-pressure-v2",
+  "simulation": true,
+  "model": {
+    "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+    "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+    "profile_id": "SIMULATED-weight-profile-v2",
+    "total_layers": 28,
+    "layer_weight_bytes": [
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728,
+      134217728
+    ],
+    "replicated_weight_bytes": 1073741824,
+    "kv_heads": 4,
+    "head_dim": 128,
+    "kv_bytes_per_element": 4,
+    "source": "simulated"
+  },
+  "request_envelope": {
+    "prompt_tokens_upper_bound": 512,
+    "max_new_tokens": 64,
+    "concurrency": 1
+  },
+  "devices": [
+    {
+      "device_id": "SIMULATED-m4-pressure",
+      "source": "simulated",
+      "budget_basis": "fresh_process_absolute",
+      "safe_process_budget_bytes": 3221225472,
+      "workspace_reserve_bytes": 536870912,
+      "safety_margin_bytes": 536870912
+    },
+    {
+      "device_id": "SIMULATED-second-mac",
+      "source": "simulated",
+      "budget_basis": "fresh_process_absolute",
+      "safe_process_budget_bytes": 25769803776,
+      "workspace_reserve_bytes": 536870912,
+      "safety_margin_bytes": 536870912
+    }
+  ]
+}
