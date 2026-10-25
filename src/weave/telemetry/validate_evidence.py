@@ -51,6 +51,15 @@ def validate(directory: str | Path) -> dict[str, Any]:
         "missing source commit",
     )
     require(s.get("git_dirty") is False, "run used uncommitted source; commit, then rerun")
+    env = s.get("environment") or {}
+    packages = env.get("packages") or {}
+    require(
+        env.get("system") == "Darwin"
+        and env.get("machine") == "arm64"
+        and bool(packages.get("mlx"))
+        and bool(packages.get("mlx-lm")),
+        "environment not recorded as native Apple Silicon with MLX",
+    )
     require(bool(rows), "trace is empty")
     require([int(r["sequence"]) for r in rows] == list(range(len(rows))), "sequence gap/duplicate")
     times = [int(r["monotonic_ns"]) for r in rows]

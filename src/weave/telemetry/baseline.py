@@ -3,6 +3,7 @@
 import argparse
 import csv
 import hashlib
+import importlib.metadata
 import json
 import platform
 import re
@@ -82,6 +83,21 @@ def git_provenance(out: Path) -> dict[str, Any]:
     return {"git_commit": commit, "git_dirty": bool(diff)}
 
 
+def environment() -> dict[str, Any]:
+    """Record what actually ran; a hash of the committed lock file only says what should have."""
+    packages = {}
+    for dist in importlib.metadata.distributions():
+        if dist.metadata["Name"]:
+            packages[re.sub(r"[-_.]+", "-", dist.metadata["Name"]).lower()] = dist.version
+    return {
+        "python": platform.python_version(),
+        "system": platform.system(),
+        "machine": platform.machine(),
+        "macos": platform.mac_ver()[0] or None,
+        "packages": dict(sorted(packages.items())),
+    }
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--workload", required=True)
@@ -123,6 +139,7 @@ def main() -> int:
         "workload_sha256": hashlib.sha256(workload_bytes).hexdigest(),
         "model_lock_sha256": hashlib.sha256(lock_bytes).hexdigest(),
         **git_provenance(out),
+        "environment": environment(),
     }
     if Path("experiments/phase1/requirements-m4-lock.txt").exists():
         summary["requirements_sha256"] = sha("experiments/phase1/requirements-m4-lock.txt")
@@ -184,8 +201,13 @@ def main() -> int:
             }
 
         model_dir = Path(lock["model_dir"])
-        if sha(model_dir / "config.json") != lock["config_sha256"]:
+        config_bytes = (model_dir / "config.json").read_bytes()
+        if hashlib.sha256(config_bytes).hexdigest() != lock["config_sha256"]:
             raise ValueError("model config differs from the lock")
+        # Geometry comes from the hashed file, so the lock's embedded copy must agree with it.
+        config = json.loads(config_bytes)
+        if config != lock["config"]:
+            raise ValueError("model lock's embedded config differs from config.json")
         mx.random.seed(w["seed"])
         mx.reset_peak_memory()
         event("model_load_start")
@@ -198,7 +220,7 @@ def main() -> int:
             model.parameters(),
             model_id=lock["model_id"],
             model_revision=lock["model_revision"],
-            total_layers=lock["config"]["num_hidden_layers"],
+            total_layers=config["num_hidden_layers"],
         )
         (out / "model_profile.json").write_text(json.dumps(profile, indent=2))
         for index in range(w["warmup_requests"] + w["measured_requests"]):
@@ -214,7 +236,7 @@ def main() -> int:
             )
             if not 0 < len(tokens) <= w["prompt_max_tokens"]:
                 raise ValueError("actual tokenized prompt exceeds the frozen workload envelope")
-            if len(tokens) + w["max_new_tokens"] > lock["config"]["max_position_embeddings"]:
+            if len(tokens) + w["max_new_tokens"] > config["max_position_embeddings"]:
                 raise ValueError("request exceeds model context limit")
             first, first_text, last_token, previous, pieces, last = None, None, None, 0, [], None
             for response in stream_generate(

@@ -2,7 +2,9 @@
 
 import csv
 import hashlib
+import importlib.metadata
 import json
+import platform
 import re
 import sys
 from pathlib import Path
@@ -109,6 +111,13 @@ def write_fake(root):
         "token_trace": "full",
         "git_commit": "b" * 40,
         "git_dirty": False,
+        "environment": {
+            "python": "3.11.17",
+            "system": "Darwin",
+            "machine": "arm64",
+            "macos": "26.0",
+            "packages": {"mlx": "0.32.4", "mlx-lm": "0.32.2"},
+        },
         "requests": [
             {
                 "request_id": k,
@@ -232,6 +241,11 @@ CORRUPTIONS = {
     ),
     "dirty_source": (lambda root, s, r: s.update(git_dirty=True), "uncommitted source"),
     "no_commit": (lambda root, s, r: s.update(git_commit=None), "missing source commit"),
+    "rosetta_or_intel": (
+        lambda root, s, r: s["environment"].update(machine="x86_64"),
+        "native Apple Silicon",
+    ),
+    "no_environment": (lambda root, s, r: s.pop("environment"), "native Apple Silicon"),
 }
 
 
@@ -287,3 +301,6 @@ def test_runner_records_exact_inputs_and_source(tmp_path, monkeypatch):
     else:
         assert re.fullmatch(r"[0-9a-f]{40}", summary["git_commit"])
         assert (out / "git-diff.patch").exists() is summary["git_dirty"]
+    env = summary["environment"]
+    assert env["python"] == platform.python_version()
+    assert env["packages"]["pytest"] == importlib.metadata.version("pytest")
