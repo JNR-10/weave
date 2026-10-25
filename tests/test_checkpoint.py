@@ -163,3 +163,10 @@ def test_package_was_validated_against_the_committed_schema_files(real_run):
             ("candidate_set", "candidate_set"),
         )
     }
+
+
+def test_package_records_the_hash_of_the_candidate_file_it_wrote(real_run):
+    _, _, out = real_run
+    summary = json.loads((out / "checkpoint.json").read_text())
+    written = (out / "candidate_plans.json").read_bytes()
+    assert summary["candidate_file_sha256"] == hashlib.sha256(written).hexdigest()

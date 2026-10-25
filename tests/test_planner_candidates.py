@@ -137,3 +137,20 @@ def test_unknown_device_is_named():
 def test_split_that_misses_layers_is_named():
     with pytest.raises(ValueError, match=r"^logical_counts: expected 28 layers in total, got 27"):
         evaluate([PRESSURE, SECOND], [10, 17], make_state())
+
+
+def test_plan_id_ignores_model_revision_as_the_guide_defines():
+    # The other half of the guide section 11 identity rule (budgets are tested above).
+    state = make_state()
+    before = evaluate([PRESSURE, SECOND], [10, 18], state)["plan_id"]
+    state["model"]["model_revision"] = "SIMULATED-another-revision"
+    assert evaluate([PRESSURE, SECOND], [10, 18], state)["plan_id"] == before
+
+
+def test_raising_the_device_limit_plans_three_macs(monkeypatch):
+    # Phase 2 lifts the limit in one place; the planning core already handles any number of
+    # Macs. 3 alone + 6 ordered pairs x 27 cuts + 6 orders of all three x C(27, 2) = 2,271.
+    monkeypatch.setattr(candidates, "PHASE1_MAX_DEVICES", 3)
+    state = make_state()
+    state["devices"].append({**state["devices"][1], "device_id": "SIMULATED-third-mac"})
+    assert generate(state)["candidate_count"] == 2271
