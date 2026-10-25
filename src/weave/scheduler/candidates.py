@@ -5,6 +5,7 @@ import hashlib
 import itertools
 import json
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +20,75 @@ def positive_int(value: Any, name: str, allow_zero: bool = False) -> int:
     return value
 
 
+# Reading the cluster state. Every error starts with the field's path ("devices[1].device_id: ...")
+# so whoever fixes the input knows exactly where to look.
+
+
+def _path(parent: str, key: str | int) -> str:
+    if isinstance(key, int):
+        return f"{parent}[{key}]"
+    return f"{parent}.{key}" if parent else key
+
+
+def _get(obj: dict[str, Any], key: str, parent: str) -> Any:
+    if key not in obj:
+        raise ValueError(f"{_path(parent, key)}: required")
+    return obj[key]
+
+
+def _object(value: Any, path: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{path}: expected a JSON object, got {type(value).__name__}")
+    return value
+
+
+def _text(obj: dict[str, Any], key: str, parent: str) -> str:
+    value = _get(obj, key, parent)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{_path(parent, key)}: expected a non-empty string, got {value!r}")
+    return value
+
+
+def _boolean(obj: dict[str, Any], key: str, parent: str) -> bool:
+    value = _get(obj, key, parent)
+    if not isinstance(value, bool):
+        raise ValueError(f"{_path(parent, key)}: expected true or false, got {value!r}")
+    return value
+
+
+@dataclass(frozen=True)
+class _ClusterState:
+    """The cluster state after its one read; planning trusts these fields without re-checking."""
+
+    snapshot_id: str
+    simulation: bool
+    model: dict[str, Any]
+    request: dict[str, Any]
+    devices: tuple[dict[str, Any], ...]
+
+
+def _parse_state(raw: Any) -> _ClusterState:
+    state = _object(raw, "state")
+    version = _get(state, "schema_version", "")
+    if version != VERSION:
+        raise ValueError(
+            f"schema_version: unsupported {version!r}; migrate explicitly to {VERSION}"
+        )
+    snapshot_id = _text(state, "snapshot_id", "")
+    simulation = _boolean(state, "simulation", "")
+    model = _object(_get(state, "model", ""), "model")
+    request = _object(_get(state, "request_envelope", ""), "request_envelope")
+    devices = _get(state, "devices", "")
+    if not isinstance(devices, list):
+        raise ValueError(f"devices: expected a list, got {type(devices).__name__}")
+    if not devices:
+        raise ValueError("devices: expected at least one device")
+    return _ClusterState(snapshot_id, simulation, model, request, tuple(devices))
+
+
 def validate_state(state: dict[str, Any]) -> dict[str, Any]:
-    """Fail closed with ValueError, including when a field is missing or has the wrong JSON type."""
+    """Fail closed with a ValueError naming the field; returns the state unchanged when valid."""
+    _parse_state(state)
     try:
         return _check_state(state)
     except (KeyError, TypeError, AttributeError) as exc:
