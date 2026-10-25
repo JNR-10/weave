@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "workload_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_max_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_new_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "concurrency": {
+      "const": 1
+    },
+    "warmup_requests": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "measured_requests": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "temperature": {
+      "const": 0
+    },
+    "seed": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "workload_id",
+    "prompt",
+    "prompt_max_tokens",
+    "max_new_tokens",
+    "concurrency",
+    "warmup_requests",
+    "measured_requests",
+    "temperature",
+    "seed"
+  ],
+  "additionalProperties": true
+}
