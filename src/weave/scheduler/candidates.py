@@ -20,6 +20,14 @@ def positive_int(value: Any, name: str, allow_zero: bool = False) -> int:
 
 
 def validate_state(state: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed with ValueError, including when a field is missing or has the wrong JSON type."""
+    try:
+        return _check_state(state)
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise ValueError(f"malformed cluster state: {exc!r}") from exc
+
+
+def _check_state(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("schema_version") != VERSION:
         raise ValueError("unsupported schema_version; migrate explicitly to 2.0.0")
     if state.get("simulation") is not True:
@@ -88,6 +96,8 @@ def evaluate(order: Sequence[str], counts: Sequence[int], state: dict[str, Any])
     if sum(counts) != model["total_layers"]:
         raise ValueError("counts must sum to total_layers")
     devices = {d["device_id"]: d for d in state["devices"]}
+    if not set(order) <= devices.keys():
+        raise ValueError("order names a device that is not in the state")
     rows, reasons = assignments(order, counts), []
     tokens = req["prompt_tokens_upper_bound"] + req["max_new_tokens"]
     for row in rows:
