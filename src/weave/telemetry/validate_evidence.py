@@ -30,7 +30,8 @@ def validate(directory: str | Path) -> dict[str, Any]:
     rows = list(csv.DictReader((root / "trace.csv").open()))
     require(s["schema_version"] == "2.0.0" and s["status"] == "success", "run did not succeed")
     require(s["simulation"] is False and s["source"] == "measured", "not measured evidence")
-    require(s["run_id"] == root.name, "run_id differs from the run directory name")
+    # resolve() so "." or a trailing "/." still names the run directory.
+    require(s["run_id"] == root.resolve().name, "run_id differs from the run directory name")
     # The copied inputs define what ran, and counts below come from the workload copy, so an
     # edit after the run must not pass silently.
     for name, key in (
@@ -65,22 +66,27 @@ def validate(directory: str | Path) -> dict[str, Any]:
     # The measured profile is the hand-off to the estimator, so it must describe this run's model.
     require((root / "model_profile.json").is_file(), "model_profile.json is missing")
     profile = json.loads((root / "model_profile.json").read_text())
-    layers = profile.get("layer_weight_bytes")
+    require(isinstance(profile, dict), "model profile is not a JSON object")
     require(
         profile.get("schema_version") == "2.0.0"
         and profile.get("source") == "measured"
+        and profile.get("measurement_kind") == "materialized_parameter_nbytes"
         and profile.get("model_id") == s["model_id"]
         and profile.get("model_revision") == s["model_revision"]
-        and profile.get("config_sha256") == lock.get("config_sha256"),
+        and profile.get("config_sha256") == lock.get("config_sha256")
+        and profile.get("source_run_id") == s["run_id"],
         "model profile does not describe this run's model",
     )
+    layers = profile.get("layer_weight_bytes")
+    tensors = profile.get("replicated_tensor_bytes")
     require(
         isinstance(layers, list)
-        and len(layers) == lock.get("config", {}).get("num_hidden_layers")
+        and len(layers) == (lock.get("config") or {}).get("num_hidden_layers")
         and all(type(n) is int and n > 0 for n in layers)
-        and profile.get("replicated_weight_bytes")
-        == sum(profile.get("replicated_tensor_bytes", {}).values())
-        > 0,
+        and isinstance(tensors, dict)
+        and bool(tensors)
+        and all(type(n) is int and n > 0 for n in tensors.values())
+        and profile.get("replicated_weight_bytes") == sum(tensors.values()),
         "model profile byte tallies incomplete",
     )
     require(

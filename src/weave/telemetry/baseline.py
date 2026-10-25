@@ -61,26 +61,44 @@ def sha(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def git_provenance(out: Path) -> dict[str, Any]:
-    """A commit hash alone hides uncommitted edits, so record whether the tree was dirty.
+def source_checkout() -> Path | None:
+    """The checkout this module was imported from, or None when it runs from an installed copy.
 
-    Git runs against the checkout that holds this module, not the working directory, so the
-    commit identifies the source that was actually imported. Untracked files are ignored; tracked
-    changes are saved beside the evidence so a dirty run still shows exactly what executed.
+    Without this check, a non-editable install inside the repo's .venv would make git describe
+    the enclosing checkout rather than the copy that actually ran.
     """
-    repo = Path(__file__).resolve().parents[3]
-    try:
-        commit = subprocess.check_output(
-            ["git", "-C", str(repo), "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
-        ).strip()
-        diff = subprocess.check_output(
-            ["git", "-C", str(repo), "diff", "HEAD"], stderr=subprocess.DEVNULL, text=True
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    here = Path(__file__).resolve()
+    repo = here.parents[3]
+    return repo if repo / "src/weave/telemetry/baseline.py" == here else None
+
+
+def git_provenance(repo: Path | None, out: Path) -> dict[str, Any]:
+    """A commit hash alone hides uncommitted edits, so record whether the source was dirty.
+
+    Tracked changes are saved beside the evidence so a dirty run still shows what executed.
+    Untracked files under src/ also count, since the package could import them. This runs
+    before the trace exists, so it reports unknown provenance rather than raising.
+    """
+    if repo is None:
         return {"git_commit": None, "git_dirty": None}
-    if diff:
-        (out / "git-diff.patch").write_text(diff)
-    return {"git_commit": commit, "git_dirty": bool(diff)}
+
+    def git(*argv: str) -> bytes:
+        return subprocess.check_output(["git", "-C", str(repo), *argv], stderr=subprocess.DEVNULL)
+
+    try:
+        commit = git("rev-parse", "HEAD").decode().strip()
+        diff = git("diff", "HEAD")
+        untracked = git("ls-files", "-z", "--others", "--exclude-standard", "--", "src")
+        if diff:
+            (out / "git-diff.patch").write_bytes(diff)
+    except (subprocess.CalledProcessError, OSError):
+        return {"git_commit": None, "git_dirty": None}
+    untracked_source = [p for p in untracked.decode(errors="replace").split("\0") if p]
+    return {
+        "git_commit": commit,
+        "git_dirty": bool(diff or untracked_source),
+        "git_untracked_source": untracked_source,
+    }
 
 
 def environment() -> dict[str, Any]:
@@ -116,6 +134,7 @@ def main() -> int:
         r"[0-9a-f]{40}", lock.get("model_revision", "")
     ):
         raise ValueError("requires a real immutable model lock")
+    repo = source_checkout()
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=False)
     (out / "workload.json").write_bytes(workload_bytes)
@@ -138,11 +157,13 @@ def main() -> int:
         "token_trace": args.token_trace,
         "workload_sha256": hashlib.sha256(workload_bytes).hexdigest(),
         "model_lock_sha256": hashlib.sha256(lock_bytes).hexdigest(),
-        **git_provenance(out),
+        **git_provenance(repo, out),
         "environment": environment(),
     }
-    if Path("experiments/phase1/requirements-m4-lock.txt").exists():
-        summary["requirements_sha256"] = sha("experiments/phase1/requirements-m4-lock.txt")
+    # Same checkout as the git record, not the working directory, so both describe one tree.
+    requirements = repo / "experiments/phase1/requirements-m4-lock.txt" if repo else None
+    if requirements and requirements.exists():
+        summary["requirements_sha256"] = sha(requirements)
     trace = (out / "trace.csv").open("x", newline="")
     writer = csv.DictWriter(trace, fieldnames=FIELDS)
     writer.writeheader()

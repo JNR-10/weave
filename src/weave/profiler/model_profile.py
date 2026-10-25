@@ -6,7 +6,12 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+# source and measurement_kind are part of the identity so a synthetic or estimated profile with
+# the same byte counts can never share an ID with a measured one.
 IDENTITY = (
+    "schema_version",
+    "source",
+    "measurement_kind",
     "model_id",
     "model_revision",
     "config_sha256",

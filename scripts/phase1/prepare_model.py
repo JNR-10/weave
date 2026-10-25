@@ -21,25 +21,25 @@ def check_geometry(config: dict[str, Any]) -> None:
     wrong = {k: config.get(k) for k, v in QWEN25_7B.items() if config.get(k) != v}
     if wrong:
         raise ValueError(f"this Phase 1 profile requires Qwen2.5-7B geometry; got {wrong}")
-    if config.get("quantization", {}).get("bits") != 4:
+    if (config.get("quantization") or {}).get("bits") != 4:
         raise ValueError("expected 4-bit converted model")
 
 
-def file_sha256(path: Path) -> str:
-    h = hashlib.sha256()
+def digest(path: Path, h: Any) -> str:
+    """Feed a file to a hash in chunks; the 4.3 GB weight file must not be read into memory."""
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    return digest(path, hashlib.sha256())
 
 
 def git_blob_sha1(path: Path) -> str:
     """Git's object id for a regular (non-LFS) file, which the hub reports as blob_id."""
-    h = hashlib.sha1(f"blob {path.stat().st_size}\0".encode())
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    return digest(path, hashlib.sha1(f"blob {path.stat().st_size}\0".encode()))
 
 
 def expected_files(siblings: list[Any]) -> dict[str, dict[str, Any]]:
@@ -132,7 +132,7 @@ def main() -> None:
     if args.verify_report:
         verify_existing(Path(args.manifest), Path(args.verify_report))
         return
-    from huggingface_hub import snapshot_download
+    from huggingface_hub import hf_hub_download, snapshot_download
 
     out, model_dir = Path(args.manifest), Path(args.model_dir)
     if out.exists():
@@ -149,6 +149,15 @@ def main() -> None:
     revision, expected = hub_files(args.repo, args.revision)
     snapshot_download(repo_id=args.repo, revision=revision, local_dir=str(model_dir))
     report = verify_snapshot(model_dir, expected)
+    damaged = [name for name in failures(report) if name in expected]
+    if args.resume and damaged:
+        # snapshot_download skips files its local metadata marks complete, even when damaged,
+        # so fetch the failing files again once. Stray weight files must be removed by hand.
+        for name in damaged:
+            hf_hub_download(
+                args.repo, name, revision=revision, local_dir=str(model_dir), force_download=True
+            )
+        report = verify_snapshot(model_dir, expected)
     if not report["ok"]:
         raise ValueError(f"snapshot does not match revision {revision}: {failures(report)}")
     config_bytes = (model_dir / "config.json").read_bytes()

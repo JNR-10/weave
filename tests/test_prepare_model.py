@@ -37,9 +37,13 @@ def test_locked_qwen7b_config_passes():
     ],
 )
 def test_other_geometry_or_quantization_rejected(changes):
-    config = {**locked_config(), **changes}
-    if config["quantization"] is None:
-        del config["quantization"]
+    with pytest.raises(ValueError):
+        prepare_model.check_geometry({**locked_config(), **changes})
+
+
+def test_missing_quantization_rejected():
+    config = locked_config()
+    del config["quantization"]
     with pytest.raises(ValueError):
         prepare_model.check_geometry(config)
 

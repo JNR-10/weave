@@ -45,6 +45,11 @@ def test_profile_id_is_content_addressed():
     assert changed["profile_id"] != make()["profile_id"]
 
 
+def test_simulated_profile_never_shares_a_measured_id():
+    simulated = {**make(), "source": "simulated"}
+    assert profile_id(simulated) != make()["profile_id"]
+
+
 @pytest.mark.parametrize(
     "tensors, total_layers",
     [

@@ -55,7 +55,7 @@ python -m pytest -q tests/test_installed_pipeline.py
 
 `prepare_model.py` refuses an existing directory, checks the full Qwen2.5-7B geometry (layers, hidden size, attention and KV heads, 4-bit), and verifies every file of the revision against the hub (SHA-256 for the LFS weights, git blob SHA-1 for the rest) before writing the lock. A stray `*.safetensors` file also fails, because `mlx_lm.load` would read it.
 
-If a download was interrupted, finish it with the explicit revision instead of writing a lock by hand:
+If a download was interrupted, finish it with the explicit revision instead of writing a lock by hand. Files that still fail verification are fetched again once; a stray `*.safetensors` file must be removed by hand.
 
 ```sh
 python scripts/phase1/prepare_model.py --resume \
@@ -73,7 +73,7 @@ On mlx-lm 0.32.2 the probe's `compatibility.json` should show `qwen2_inherits_pi
 
 ## Measured runs (M4)
 
-Start from a clean, committed checkout. The runner records the commit of the checkout it was imported from, whether tracked files had uncommitted changes, the Python and macOS versions, the machine architecture, and every installed package version. The validator rejects runs with uncommitted changes or no commit, and runs not recorded as native arm64 with MLX. It also requires `model_profile.json` to describe the locked model, with a complete layer tally and a `profile_id` that matches its content. Every run gets a new directory; never delete or reuse an attempt.
+Start from a clean, committed checkout. The runner records the commit of the checkout it was imported from (unknown if it runs from a non-editable install), whether tracked files had uncommitted changes or `src/` had untracked files, the Python and macOS versions, the machine architecture, and every installed package version. The validator rejects runs with uncommitted changes or no commit, and runs not recorded as native arm64 with MLX. It also requires `model_profile.json` to describe the locked model, with a complete layer tally and a `profile_id` that matches its content. Every run gets a new directory; never delete or reuse an attempt.
 
 ```sh
 git status --short   # tracked files must be clean

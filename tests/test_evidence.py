@@ -6,6 +6,7 @@ import importlib.metadata
 import json
 import platform
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -66,6 +67,7 @@ def write_fake(root):
         config_sha256="e" * 64,
         total_layers=2,
     )
+    profile["source_run_id"] = root.name
     (root / "model_profile.json").write_text(json.dumps(profile))
     identity = {
         "run_id": root.name,
@@ -271,7 +273,79 @@ CORRUPTIONS = {
         lambda root, s, r: edit_input(root, s, "model_profile.json", layer_weight_bytes=[8]),
         "byte tallies incomplete",
     ),
+    "profile_from_other_run": (
+        lambda root, s, r: edit_input(root, s, "model_profile.json", source_run_id="other-run"),
+        "does not describe this run's model",
+    ),
+    "profile_negative_tensor": (
+        lambda root, s, r: edit_input(
+            root,
+            s,
+            "model_profile.json",
+            replicated_tensor_bytes={"a": 5, "b": -1},
+            replicated_weight_bytes=4,
+        ),
+        "byte tallies incomplete",
+    ),
+    "profile_tensors_not_a_mapping": (
+        lambda root, s, r: edit_input(root, s, "model_profile.json", replicated_tensor_bytes=[4]),
+        "byte tallies incomplete",
+    ),
 }
+
+
+def test_run_directory_given_as_dot(tmp_path, monkeypatch):
+    write_fake(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    assert validate(".")["status"] == "PASS"
+
+
+def git_repo(root):
+    def git(*argv):
+        subprocess.run(
+            ["git", "-c", "user.name=t", "-c", "user.email=t@t", *argv],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+
+    (root / "src").mkdir(parents=True)
+    (root / "src/tracked.py").write_bytes(b"x = 1\n")
+    git("init", "-q")
+    git("add", ".")
+    git("commit", "-q", "-m", "init")
+    return root
+
+
+def test_clean_checkout_is_not_dirty(tmp_path):
+    repo, out = git_repo(tmp_path / "repo"), tmp_path / "out"
+    out.mkdir()
+    (repo / "notes.md").write_text("untracked outside src does not run")
+    p = baseline.git_provenance(repo, out)
+    assert re.fullmatch(r"[0-9a-f]{40}", p["git_commit"])
+    assert p["git_dirty"] is False and not (out / "git-diff.patch").exists()
+
+
+def test_untracked_source_counts_as_dirty(tmp_path):
+    repo, out = git_repo(tmp_path / "repo"), tmp_path / "out"
+    out.mkdir()
+    (repo / "src/new_helper.py").write_text("y = 2\n")
+    p = baseline.git_provenance(repo, out)
+    assert p["git_dirty"] is True and p["git_untracked_source"] == ["src/new_helper.py"]
+
+
+def test_non_utf8_change_is_recorded_not_raised(tmp_path):
+    repo, out = git_repo(tmp_path / "repo"), tmp_path / "out"
+    out.mkdir()
+    (repo / "src/tracked.py").write_bytes(b"x = '\xff\xfe'\n")
+    p = baseline.git_provenance(repo, out)
+    assert p["git_dirty"] is True
+    assert b"\xff\xfe" in (out / "git-diff.patch").read_bytes()
+
+
+def test_installed_copy_has_unknown_provenance(tmp_path):
+    assert baseline.git_provenance(None, tmp_path) == {"git_commit": None, "git_dirty": None}
+    assert baseline.source_checkout() == ROOT  # this suite runs from the editable checkout
 
 
 @pytest.mark.parametrize("change", CORRUPTIONS)
