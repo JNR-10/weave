@@ -14,12 +14,6 @@ from weave.estimator.memory import estimate_stage_memory
 VERSION = "2.0.0"
 
 
-def positive_int(value: Any, name: str, allow_zero: bool = False) -> int:
-    if type(value) is not int or value < (0 if allow_zero else 1):
-        raise ValueError(f"{name}: expected {'nonnegative' if allow_zero else 'positive'} integer")
-    return value
-
-
 # Reading the cluster state. Every error starts with the field's path ("devices[1].device_id: ...")
 # so whoever fixes the input knows exactly where to look.
 
@@ -231,25 +225,40 @@ def validate_state(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def assignments(device_order: Sequence[str], logical_counts: Sequence[int]) -> list[dict[str, Any]]:
-    if len(device_order) != len(logical_counts) or not logical_counts:
-        raise ValueError("device/count length mismatch")
-    if len(set(device_order)) != len(device_order):
-        raise ValueError("duplicate device assignment")
-    start, rows = 0, []
-    for stage, (device_id, count) in enumerate(zip(device_order, logical_counts)):
-        positive_int(count, "layer_count")
-        rows.append(
-            {
-                "device_id": device_id,
-                "logical_stage": stage,
-                "mlx_rank": len(logical_counts) - 1 - stage,
-                "start_layer": start,
-                "end_layer_exclusive": start + count,
-                "layer_count": count,
-            }
+    """Lay the layers out stage by stage, and give each stage its MLX rank (guide section 7).
+
+    Logical stage 0 runs the earliest layers, but MLX's PipelineMixin gives rank 0 the *last*
+    layers, so ranks count down from the final stage. Ranges are half-open,
+    [start_layer, end_layer_exclusive), matching Python slicing and MLX's start_idx/end_idx.
+    """
+    if not logical_counts:
+        raise ValueError("logical_counts: expected at least one stage")
+    if len(device_order) != len(logical_counts):
+        raise ValueError(
+            f"device_order: expected {len(logical_counts)} devices to match logical_counts, "
+            f"got {len(device_order)}"
         )
-        start += count
-    return rows
+    counts = [_positive_int(c, f"logical_counts[{i}]") for i, c in enumerate(logical_counts)]
+    seen: set[str] = set()
+    for i, device_id in enumerate(device_order):
+        if not isinstance(device_id, str) or not device_id:
+            raise ValueError(f"device_order[{i}]: expected a non-empty string, got {device_id!r}")
+        if device_id in seen:
+            raise ValueError(f"device_order[{i}]: duplicate {device_id!r}")
+        seen.add(device_id)
+    last_rank = len(counts) - 1
+    starts = itertools.accumulate(counts, initial=0)
+    return [
+        {
+            "device_id": device_id,
+            "logical_stage": stage,
+            "mlx_rank": last_rank - stage,
+            "start_layer": start,
+            "end_layer_exclusive": start + count,
+            "layer_count": count,
+        }
+        for stage, (device_id, count, start) in enumerate(zip(device_order, counts, starts))
+    ]
 
 
 def evaluate(order: Sequence[str], counts: Sequence[int], state: dict[str, Any]) -> dict[str, Any]:
