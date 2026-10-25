@@ -161,8 +161,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="experiments/phase1/schemas/v2")
     root = Path(parser.parse_args().output_dir)
+    schemas = build_schemas()
+    # Check every target first so a refused run leaves no partial schema set behind.
+    existing = [str(p) for name in schemas if (p := root / f"{name}.schema.json").exists()]
+    if existing:
+        raise FileExistsError(f"refusing to overwrite {existing}; use a fresh --output-dir")
     root.mkdir(parents=True, exist_ok=True)
-    for name, schema in build_schemas().items():
+    for name, schema in schemas.items():
         schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **schema}
         with (root / f"{name}.schema.json").open("x") as f:
             json.dump(schema, f, indent=2)
