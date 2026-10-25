@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import itertools
 import json
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -218,9 +218,16 @@ def _check_phase1_limits(state: _ClusterState) -> None:
             )
 
 
+def _load_state(state: Any) -> _ClusterState:
+    """Read the state once and hold it to the Phase 1 limits; everything after trusts the result."""
+    cluster = _parse_state(state)
+    _check_phase1_limits(cluster)
+    return cluster
+
+
 def validate_state(state: dict[str, Any]) -> dict[str, Any]:
     """Fail closed with a ValueError naming the field; returns the state unchanged when valid."""
-    _check_phase1_limits(_parse_state(state))
+    _load_state(state)
     return state
 
 
@@ -261,72 +268,87 @@ def assignments(device_order: Sequence[str], logical_counts: Sequence[int]) -> l
     ]
 
 
-def evaluate(order: Sequence[str], counts: Sequence[int], state: dict[str, Any]) -> dict[str, Any]:
-    validate_state(state)
-    model, req = state["model"], state["request_envelope"]
-    if sum(counts) != model["total_layers"]:
-        raise ValueError("counts must sum to total_layers")
-    devices = {d["device_id"]: d for d in state["devices"]}
-    if not set(order) <= devices.keys():
-        raise ValueError("order names a device that is not in the state")
-    rows, reasons = assignments(order, counts), []
-    tokens = req["prompt_tokens_upper_bound"] + req["max_new_tokens"]
+def _plan_id(order: Sequence[str], counts: Sequence[int], cluster: _ClusterState) -> str:
+    """Guide section 11: a plan's identity is snapshot, profile, device order and layer counts.
+
+    It deliberately ignores the model revision and the budgets, so a changed input must come with
+    a new snapshot ID. Changing what goes in here changes every plan ID and the 2.0.0 contract.
+    """
+    identity = {
+        "order": list(order),
+        "counts": list(counts),
+        "snapshot": cluster.snapshot_id,
+        "profile": cluster.model.profile_id,
+    }
+    digest = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    return "candidate-" + digest[:16]
+
+
+def _evaluate(
+    cluster: _ClusterState, order: Sequence[str], counts: Sequence[int]
+) -> dict[str, Any]:
+    """One candidate: each stage's memory against its Mac's budget. Never selects or runs it."""
+    model, request = cluster.model, cluster.request
+    rows = assignments(order, counts)
+    if sum(counts) != model.total_layers:
+        raise ValueError(
+            f"logical_counts: expected {model.total_layers} layers in total, got {sum(counts)}"
+        )
+    devices = {device.device_id: device for device in cluster.devices}
+    for i, device_id in enumerate(order):
+        if device_id not in devices:
+            raise ValueError(f"device_order[{i}]: {device_id!r} is not in the state")
+    total_tokens = request.prompt_tokens_upper_bound + request.max_new_tokens
+    reasons = []
     for row in rows:
-        d = devices[row["device_id"]]
+        device = devices[row["device_id"]]
         parts = estimate_stage_memory(
-            layer_weight_bytes=model["layer_weight_bytes"][
+            layer_weight_bytes=model.layer_weight_bytes[
                 row["start_layer"] : row["end_layer_exclusive"]
             ],
-            replicated_weight_bytes=model["replicated_weight_bytes"],
-            total_tokens=tokens,
-            kv_heads=model["kv_heads"],
-            head_dim=model["head_dim"],
-            kv_bytes_per_element=model["kv_bytes_per_element"],
-            concurrency=req["concurrency"],
-            workspace_reserve_bytes=d["workspace_reserve_bytes"],
-            safety_margin_bytes=d["safety_margin_bytes"],
+            replicated_weight_bytes=model.replicated_weight_bytes,
+            total_tokens=total_tokens,
+            kv_heads=model.kv_heads,
+            head_dim=model.head_dim,
+            kv_bytes_per_element=model.kv_bytes_per_element,
+            concurrency=request.concurrency,
+            workspace_reserve_bytes=device.workspace_reserve_bytes,
+            safety_margin_bytes=device.safety_margin_bytes,
         )
         predicted = sum(parts.values())
+        budget = device.safe_process_budget_bytes
         row.update(
             {
                 "memory_components": parts,
                 "predicted_memory_bytes": predicted,
-                "safe_process_budget_bytes": d["safe_process_budget_bytes"],
-                "headroom_bytes": d["safe_process_budget_bytes"] - predicted,
+                "safe_process_budget_bytes": budget,
+                "headroom_bytes": budget - predicted,
             }
         )
-        if predicted > d["safe_process_budget_bytes"]:
+        if predicted > budget:
             reasons.append(
                 {
                     "code": "MEMORY_BUDGET_EXCEEDED",
-                    "device_id": d["device_id"],
-                    "excess_bytes": predicted - d["safe_process_budget_bytes"],
+                    "device_id": device.device_id,
+                    "excess_bytes": predicted - budget,
                 }
             )
-    identity = {
-        "order": list(order),
-        "counts": list(counts),
-        "snapshot": state["snapshot_id"],
-        "profile": model["profile_id"],
-    }
-    plan_id = (
-        "candidate-"
-        + hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16]
-    )
+    by_rank = sorted(rows, key=lambda row: row["mlx_rank"])
     return {
         "schema_version": VERSION,
-        "plan_id": plan_id,
-        "source_snapshot_id": state["snapshot_id"],
-        "model_id": model["model_id"],
-        "model_revision": model["model_revision"],
-        "profile_id": model["profile_id"],
+        "plan_id": _plan_id(order, counts, cluster),
+        "source_snapshot_id": cluster.snapshot_id,
+        "model_id": model.model_id,
+        "model_revision": model.model_revision,
+        "profile_id": model.profile_id,
+        # Fixed by the guide section 8 safety boundary: a candidate is never a decision.
         "simulation": True,
         "selected": False,
         "policy": "candidate_only",
-        "mode": "single_device" if len(counts) == 1 else "pipeline",
-        "logical_split": list(counts),
-        "mlx_split_by_rank": list(reversed(counts)),
-        "device_id_by_mlx_rank": list(reversed(order)),
+        "mode": "single_device" if len(rows) == 1 else "pipeline",
+        "logical_split": [row["layer_count"] for row in rows],
+        "mlx_split_by_rank": [row["layer_count"] for row in by_rank],
+        "device_id_by_mlx_rank": [row["device_id"] for row in by_rank],
         "assignments": rows,
         "memory_feasible": not reasons,
         "rejection_reasons": reasons,
@@ -335,22 +357,43 @@ def evaluate(order: Sequence[str], counts: Sequence[int], state: dict[str, Any])
     }
 
 
+def evaluate(order: Sequence[str], counts: Sequence[int], state: dict[str, Any]) -> dict[str, Any]:
+    """One candidate for an explicit device order and logical layer split."""
+    return _evaluate(_load_state(state), order, counts)
+
+
+def _splits(total_layers: int, stages: int) -> Iterator[list[int]]:
+    """Every way to give each stage at least one layer, first stage's share rising first."""
+    for cuts in itertools.combinations(range(1, total_layers), stages - 1):
+        bounds = (0, *cuts, total_layers)
+        yield [end - start for start, end in itertools.pairwise(bounds)]
+
+
+def _layouts(cluster: _ClusterState) -> Iterator[tuple[tuple[str, ...], list[int]]]:
+    """Every placement: each Mac alone, then every ordered group of Macs with every split.
+
+    The order is part of the output and the golden file: single-Mac plans in device order, then
+    groups by size, each size in permutation order. Nothing here assumes two Macs; the Phase 1
+    limit check is what caps the group size today.
+    """
+    device_ids = [device.device_id for device in cluster.devices]
+    for size in range(1, len(device_ids) + 1):
+        for order in itertools.permutations(device_ids, size):
+            for counts in _splits(cluster.model.total_layers, size):
+                yield order, counts
+
+
 def generate(state: dict[str, Any]) -> dict[str, Any]:
-    validate_state(state)
-    total = state["model"]["total_layers"]
-    ids = [d["device_id"] for d in state["devices"]]
-    plans = [evaluate([d], [total], state) for d in ids]
-    if len(ids) == 2:
-        for order in itertools.permutations(ids):
-            for left in range(1, total):
-                plans.append(evaluate(order, [left, total - left], state))
+    """Every candidate for the state, all unselected: ranking and selection are later phases."""
+    cluster = _load_state(state)
+    plans = [_evaluate(cluster, order, counts) for order, counts in _layouts(cluster)]
     return {
         "schema_version": VERSION,
         "simulation": True,
-        "source_snapshot_id": state["snapshot_id"],
+        "source_snapshot_id": cluster.snapshot_id,
         "selected_plan_id": None,
         "candidate_count": len(plans),
-        "memory_feasible_count": sum(p["memory_feasible"] for p in plans),
+        "memory_feasible_count": sum(plan["memory_feasible"] for plan in plans),
         "candidates": plans,
     }
 
