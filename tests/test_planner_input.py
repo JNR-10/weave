@@ -84,3 +84,24 @@ def test_bad_request_field_is_named(path, mutate):
     mutate(state["request_envelope"])
     with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
         validate_state(state)
+
+
+DEVICES = [
+    ("devices[0]", lambda d: d.__setitem__(0, "SIMULATED-m4-pressure")),
+    ("devices[0].device_id", lambda d: d[0].update(device_id="")),
+    ("devices[1].device_id", lambda d: d[1].pop("device_id")),
+    ("devices[1].device_id", lambda d: d[1].update(device_id=d[0]["device_id"])),
+    ("devices[0].source", lambda d: d[0].pop("source")),
+    ("devices[1].budget_basis", lambda d: d[1].pop("budget_basis")),
+    ("devices[0].safe_process_budget_bytes", lambda d: d[0].update(safe_process_budget_bytes=0)),
+    ("devices[1].workspace_reserve_bytes", lambda d: d[1].update(workspace_reserve_bytes=0)),
+    ("devices[1].safety_margin_bytes", lambda d: d[1].update(safety_margin_bytes=True)),
+]
+
+
+@pytest.mark.parametrize("path, mutate", DEVICES)
+def test_bad_device_field_is_named(path, mutate):
+    state = make_state()
+    mutate(state["devices"])
+    with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
+        validate_state(state)

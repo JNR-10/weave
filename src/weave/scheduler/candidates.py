@@ -129,6 +129,41 @@ def _parse_request(request: dict[str, Any]) -> _RequestEnvelope:
 
 
 @dataclass(frozen=True)
+class _DeviceBudget:
+    """One Mac's absolute budget for a fresh model process, and the reserves held out of it."""
+
+    device_id: str
+    source: str
+    budget_basis: str
+    safe_process_budget_bytes: int
+    workspace_reserve_bytes: int
+    safety_margin_bytes: int
+
+
+def _parse_devices(devices: list[Any]) -> tuple[_DeviceBudget, ...]:
+    parsed: list[_DeviceBudget] = []
+    for i, raw in enumerate(devices):
+        parent = f"devices[{i}]"
+        device = _object(raw, parent)
+        device_id = _text(device, "device_id", parent)
+        if device_id in {d.device_id for d in parsed}:
+            raise ValueError(f"{parent}.device_id: duplicate {device_id!r}")
+        parsed.append(
+            _DeviceBudget(
+                device_id=device_id,
+                source=_text(device, "source", parent),
+                budget_basis=_text(device, "budget_basis", parent),
+                safe_process_budget_bytes=_positive_field(
+                    device, "safe_process_budget_bytes", parent
+                ),
+                workspace_reserve_bytes=_positive_field(device, "workspace_reserve_bytes", parent),
+                safety_margin_bytes=_positive_field(device, "safety_margin_bytes", parent),
+            )
+        )
+    return tuple(parsed)
+
+
+@dataclass(frozen=True)
 class _ClusterState:
     """The cluster state after its one read; planning trusts these fields without re-checking."""
 
@@ -136,7 +171,7 @@ class _ClusterState:
     simulation: bool
     model: _ModelProfile
     request: _RequestEnvelope
-    devices: tuple[dict[str, Any], ...]
+    devices: tuple[_DeviceBudget, ...]
 
 
 def _parse_state(raw: Any) -> _ClusterState:
@@ -155,7 +190,7 @@ def _parse_state(raw: Any) -> _ClusterState:
         raise ValueError(f"devices: expected a list, got {type(devices).__name__}")
     if not devices:
         raise ValueError("devices: expected at least one device")
-    return _ClusterState(snapshot_id, simulation, model, request, tuple(devices))
+    return _ClusterState(snapshot_id, simulation, model, request, _parse_devices(devices))
 
 
 def validate_state(state: dict[str, Any]) -> dict[str, Any]:
@@ -182,16 +217,11 @@ def _check_state(state: dict[str, Any]) -> dict[str, Any]:
     devices = state["devices"]
     if not 1 <= len(devices) <= 2:
         raise ValueError("Phase 1 supports one or two candidate devices")
-    ids = [d["device_id"] for d in devices]
-    if any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids):
-        raise ValueError("device_id values must be nonempty and unique")
     for d in devices:
         if d["source"] != "simulated":
             raise ValueError("every fixture device must be labeled simulated")
         if d["budget_basis"] != "fresh_process_absolute":
             raise ValueError("unsupported budget basis")
-        for key in ("safe_process_budget_bytes", "workspace_reserve_bytes", "safety_margin_bytes"):
-            positive_int(d[key], key)
     return state
 
 
