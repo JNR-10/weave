@@ -52,3 +52,7 @@ logs/
 .vscode/
 .idea/
 *.swp
+
+
+# --- Local documentation ---
+donotcheckin/
