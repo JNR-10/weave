@@ -1,8 +1,10 @@
 # Spec 0001: Phase 1 planner rebuild and deliverables
 
-- **Status:** ready-for-agent
-- **Owner:** Jainil (author), Mohit (reviews memory terms), Urmi (reviews candidate semantics)
-- **Branch:** `feat/jainilr-phase1-schedular`, merging into `feat/runtime-phase1-mohit`
+- **Status:** implemented (plan steps 1–9 done, review fixes included); the merge waits for
+  Jainil's go-ahead
+- **Owner:** Jainil
+- **Branch:** `feat/jainilr-phase1-schedular`; merges into `feat/runtime-phase1-mohit` only when
+  Jainil says so
 - **Governs:** guide v2 sections 7, 8, 10, 11 and 12 (gate G4 and the section 12.2 demo), under
   interface 2.0.0 as recorded in the draft interface-freeze note
 
@@ -71,15 +73,15 @@ same run.
 29. As a reviewer, I want every synthetic identity labeled SIMULATED, so that synthetic data can never join measured evidence.
 30. As the planner's author, I want the candidate file validated against the committed 2.0.0 candidate-set schema, so that the contract is checked mechanically.
 31. As a teammate, I want the candidate and fixture commands to refuse to overwrite an existing file, so that an earlier output is never silently replaced.
-32. As Mohit, I want the planner modules to import without MLX, so that they run on Intel Macs and in CI.
+32. As a teammate on an Intel Mac or in CI, I want the planner modules to import without MLX, so that they run wherever the portable checks run.
 33. As the planner's author, I want one checkpoint command that prints the guide's section 12.2 items, so that I can demonstrate my gate in one step.
 34. As a checkpoint reviewer, I want to see one single-device plan, one accepted two-Mac plan, the rejected [10, 18] plan with its excess bytes, and the logical-to-MLX rank mapping, so that I can confirm fallback, feasibility, rejection and rank semantics at a glance.
 35. As the planner's author, I want the same command to write my evidence package into a fresh simulated results directory, so that the demo and the evidence always come from one run.
-36. As a teammate, I want the evidence package to hold the candidate file, a copy of the fixture with its hash, the schema-validation result, the planner test results and a short README, so that I can review the gate without rerunning anything.
+36. As a teammate, I want the evidence package to hold the candidate file, a copy of the fixture with its hash, the schema-validation result with the hashes of the committed schema files used, the planner test results, the source commit and any uncommitted source, a machine-readable summary and a short README, so that I can review the gate without rerunning anything.
 37. As a teammate, I want the checkpoint command to refuse to reuse an existing results directory, so that every evidence package is a new attempt.
 38. As a coding agent, I want the specs folder listed in AGENTS.md, so that I read the plan before changing the planner.
 39. As a reviewer, I want the rebuild landed in small commits that each pass `make check`, so that I can review it rule by rule and `main` stays green when it lands.
-40. As Urmi, I want the rebuilt planner reviewed before it merges into the Phase 1 integration branch, so that the candidate semantics I will rank later are sound.
+40. As the planner's author, I want the rebuilt planner reviewed on two axes (standards and spec) before it merges into the Phase 1 integration branch, and merged only when I say so, so that the candidate semantics others build on are sound.
 
 ## Implementation Decisions
 
@@ -93,16 +95,22 @@ same run.
 - **Parse once:** the cluster state is read once into immutable typed records (standard-library
   dataclasses): the cluster state, the model profile, the request envelope and each device's budget.
   Every validation failure raises `ValueError` naming the field. The planning logic receives only
-  parsed records and never re-validates per candidate.
+  parsed records: the state is parsed and checked once per call to `generate` or `evaluate`, never
+  once per candidate. The public helpers `assignments` and `estimate_stage_memory` still check their
+  own arguments, so each stays safe to call on its own.
 - **Limits at the boundary:** the Phase 1 limits (wholly simulated input, at most two Macs,
-  concurrency 1, schema 2.0.0, fresh-process absolute budgets) form one explicit check applied while
-  reading the input. The planning core supports any number of Macs and any concurrency.
+  concurrency 1, fresh-process absolute budgets) form one explicit check on the parsed state, separate
+  from parsing. The schema version is a contract check made while parsing, not a Phase 1 limit:
+  lifting the limits must never admit a version other than 2.0.0. The planning core supports any
+  number of Macs and any concurrency; raising the public device-limit setting is enough to plan
+  three Macs.
 - **Enumeration order is part of the output:** single-device candidates in device order, then each
   ordered pair of Macs in permutation order, with the first Mac's layer count rising from 1 to L − 1.
   The general core's enumeration must reduce to exactly this order for two Macs.
 - **Mapping (guide section 7):** layer ranges are half-open. Logical stage 0 runs the earliest
   layers; MLX rank = (number of stages − 1 − logical stage). The split by MLX rank is the logical split
-  reversed, and the devices by MLX rank are the device order reversed.
+  reversed, and the devices by MLX rank are the device order reversed. `assignments` also rejects an
+  empty or non-string device name.
 - **Memory (guide section 10):** predicted bytes per stage = assigned layer bytes + replicated bytes +
   KV upper bound + workspace reserve + safety margin, all integer bytes. KV upper bound = 2 × assigned
   layers × concurrency × (prompt tokens upper bound + max new tokens) × KV heads × head dimension × KV
@@ -117,23 +125,37 @@ same run.
   the SHA-256 of the sorted-key JSON of (device order, layer counts, snapshot ID, profile ID); it
   ignores the model revision and the budgets, so a changed input needs a new snapshot ID. The fixture's
   4 bytes per KV element is a conservative planning assumption; calibration to MLX's real cache (bf16,
-  256-token allocation steps) is Phase 2 work owned by Mohit.
+  256-token allocation steps) is Phase 2 work.
 - **Serialization unchanged:** 2-space-indented JSON with today's key order and no trailing newline,
   written with exclusive creation (never overwriting).
-- **Checkpoint command:** `python -m weave.scheduler.checkpoint` reads the committed fixture by
-  default and prints the four section 12.2 items. In the same run it creates a new results directory
-  named `SIMULATED-<UTC timestamp>-checkpoint` (refusing an existing one) holding the candidate file, a
-  byte copy of the fixture with its SHA-256, the schema-validation result, the planner test output and
-  a README. It needs the dev environment (`make setup`), since schema validation uses `jsonschema`; it
-  exits non-zero if the tests or the schema validation fail.
+- **Checkpoint command:** `python -m weave.scheduler.checkpoint` prints the four section 12.2 items.
+  By default it reads the committed fixture and writes under the repository's gitignored results
+  folder, both resolved from the checkout the module was imported from, never the working directory;
+  outside a checkout, `--state` and `--results-dir` are required. Each run creates a new
+  `SIMULATED-<UTC timestamp>-checkpoint` directory, refusing an existing one and any name without the
+  SIMULATED- prefix (guide sections 5.1 and 8), so simulated evidence is always labeled. It holds a
+  byte copy of the input state, the candidate file, a machine-readable summary (hashes, counts, check
+  results, the source commit and whether it had uncommitted changes, the demo's plan IDs), the planner
+  test output and a README; when the source was dirty, also the tracked diff and the untracked source
+  (guide section 12.1 asks for the source commit). Schema validation checks the files as written
+  against the committed 2.0.0 schema files and records each schema file's hash. For an input without a
+  rejected logical [10, 18], the demo shows another rejected split. It needs the dev environment
+  (`make setup`) for `jsonschema`, and exits non-zero if the planner tests or the schema validation
+  fail.
 - **AGENTS.md** gains a pointer to the specs folder.
+- **Pre-commit:** the whitespace and end-of-file fixers skip the golden-reference folder, whose files
+  must stay byte-exact.
+- **Reference tests kept:** the guide's reference planner tests stay alongside the new suites;
+  removing them would be a file move, which AGENTS.md says to ask about first.
 - **Authorship:** commits are made under Jainil's account with no AI co-author trailers.
 
 ## Testing Decisions
 
 - **A good test** drives a public interface with realistic input and asserts on what a caller can
-  observe: the returned values, the written file and the raised error. No private helpers and no
-  mocks.
+  observe: the returned values, the written file and the raised error. No private helpers, and no
+  mocks except at a system boundary: the checkpoint's test-suite subprocess may be replaced by a fake,
+  including a failing one to prove the non-zero exit. A test may raise the public Phase 1 device-limit
+  setting to exercise the general core through `generate`.
 - **Seams (confirmed):**
   1. `generate` and the candidate command, for the whole output: the golden comparison, 56
      candidates and 15 memory-feasible, exact layer cover, the safety flags, and schema validation.
@@ -151,8 +173,12 @@ same run.
 - **Invalid-input table:** one parametrized case per malformed state, asserting the field named in the
   error.
 - **Fixture reproduction:** the generated fixture equals the committed one byte for byte.
-- **Checkpoint command:** run in a temporary directory; assert that the printed items are present,
-  that the package files exist with consistent hashes, and that an existing directory is refused.
+- **General core:** with the device limit raised to three, `generate` gives 2,271 candidates, worked
+  by hand (3 alone + 6 ordered pairs × 27 cuts + 6 orders of three × C(27, 2)).
+- **Checkpoint command:** run against temporary directories and from outside the repository; assert
+  the printed items, that the recorded hashes match the written files and the committed schema files,
+  that the default folder is the repository's own results folder, that a failing planner suite exits
+  non-zero, and that an existing or unlabeled directory is refused.
 - **Prior art:** the existing candidate tests (parametrized exact-cover checks), the schema-drift
   test (comparing generated artifacts with committed ones), the evidence corruption table (one case
   per failure, matched on the message), and the repo-rule tests (failure messages that say how to
@@ -163,12 +189,12 @@ same run.
 - Measured model profiles as planner input (needs a separately reviewed interface with
   per-component provenance, guide section 8).
 - Lifting the Phase 1 limits at the boundary (three Macs, concurrency above 1).
-- Cost ranking, plan selection, and KEEP/SWITCH decisions (Phase 3 and later, owned by Urmi).
-- Calibrating the KV estimate or workspace reserve against MLX (Phase 2, owned by Mohit).
+- Cost ranking, plan selection, and KEEP/SWITCH decisions (Phase 3 and later).
+- Calibrating the KV estimate or workspace reserve against MLX (Phase 2).
 - MLX execution, the split-aware loader, launching, and switching (Phase 2 and later).
 - Any change to interface 2.0.0 or to the plan-identity rule.
 - Issue-tracker setup and the repository restructure (both deferred).
-- Changes to the telemetry runner, the validator, or Mohit's scripts.
+- Changes to the telemetry runner, the validator, or the M4 setup scripts.
 
 ## Further Notes
 
@@ -180,10 +206,15 @@ same run.
   pressure Mac first is rejected by 292,028,416 bytes. The reference candidate file is 121,884 bytes.
 - The draft interface-freeze note governs the semantics. Anything here that would change it is out
   of scope until the team signs off.
+- Step 9's two-axis review (standards and spec) led to these fixes: the checkpoint's paths no longer
+  depend on the working directory, its evidence is validated against the committed schema files, and
+  three rules gained tests (plan IDs ignore the model revision, the candidate-file hash, three Macs).
+  The spec was amended to record the deliberate choices above.
 
 ## Plan
 
-Each step is test-first, passes `make check`, and is committed and pushed on its own.
+Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–9 are
+done; step 10 waits for Jainil's go-ahead.
 
 1. **Spec:** add this spec and the AGENTS.md pointer.
 2. **Golden reference:** save today's candidate file with the tests; add the byte-for-byte golden test
@@ -197,4 +228,4 @@ Each step is test-first, passes `make check`, and is committed and pushed on its
 7. **Fixture:** rebuild `make_state`; the committed fixture is reproduced byte for byte.
 8. **Checkpoint:** add the checkpoint command, its evidence package and its tests.
 9. **Review:** run the code-review skill on the branch and fix its findings.
-10. **Merge:** merge into `feat/runtime-phase1-mohit` with a merge commit.
+10. **Merge:** merge into `feat/runtime-phase1-mohit` with a merge commit, only when Jainil says so.
