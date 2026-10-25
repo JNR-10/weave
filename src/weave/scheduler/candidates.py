@@ -111,13 +111,31 @@ def _parse_model(model: dict[str, Any]) -> _ModelProfile:
 
 
 @dataclass(frozen=True)
+class _RequestEnvelope:
+    """The largest request the plan must hold: prompt and output token bounds, and concurrency."""
+
+    prompt_tokens_upper_bound: int
+    max_new_tokens: int
+    concurrency: int
+
+
+def _parse_request(request: dict[str, Any]) -> _RequestEnvelope:
+    parent = "request_envelope"
+    return _RequestEnvelope(
+        prompt_tokens_upper_bound=_positive_field(request, "prompt_tokens_upper_bound", parent),
+        max_new_tokens=_positive_field(request, "max_new_tokens", parent),
+        concurrency=_positive_field(request, "concurrency", parent),
+    )
+
+
+@dataclass(frozen=True)
 class _ClusterState:
     """The cluster state after its one read; planning trusts these fields without re-checking."""
 
     snapshot_id: str
     simulation: bool
     model: _ModelProfile
-    request: dict[str, Any]
+    request: _RequestEnvelope
     devices: tuple[dict[str, Any], ...]
 
 
@@ -131,7 +149,7 @@ def _parse_state(raw: Any) -> _ClusterState:
     snapshot_id = _text(state, "snapshot_id", "")
     simulation = _boolean(state, "simulation", "")
     model = _parse_model(_object(_get(state, "model", ""), "model"))
-    request = _object(_get(state, "request_envelope", ""), "request_envelope")
+    request = _parse_request(_object(_get(state, "request_envelope", ""), "request_envelope"))
     devices = _get(state, "devices", "")
     if not isinstance(devices, list):
         raise ValueError(f"devices: expected a list, got {type(devices).__name__}")
@@ -159,8 +177,6 @@ def _check_state(state: dict[str, Any]) -> dict[str, Any]:
     model, req = state["model"], state["request_envelope"]
     if model["source"] != "simulated":
         raise ValueError("fixture model profile must be labeled simulated")
-    for key in ("prompt_tokens_upper_bound", "max_new_tokens", "concurrency"):
-        positive_int(req[key], key)
     if req["concurrency"] != 1:
         raise ValueError("Phase 1 supports concurrency=1 only")
     devices = state["devices"]

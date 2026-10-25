@@ -68,3 +68,19 @@ def test_bad_model_field_is_named(path, mutate):
     mutate(state["model"])
     with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
         validate_state(state)
+
+
+REQUEST = [
+    ("request_envelope.prompt_tokens_upper_bound", lambda r: r.update(prompt_tokens_upper_bound=0)),
+    ("request_envelope.prompt_tokens_upper_bound", lambda r: r.pop("prompt_tokens_upper_bound")),
+    ("request_envelope.max_new_tokens", lambda r: r.update(max_new_tokens="64")),
+    ("request_envelope.concurrency", lambda r: r.update(concurrency=0)),
+]
+
+
+@pytest.mark.parametrize("path, mutate", REQUEST)
+def test_bad_request_field_is_named(path, mutate):
+    state = make_state()
+    mutate(state["request_envelope"])
+    with pytest.raises(ValueError, match=rf"^{re.escape(path)}: "):
+        validate_state(state)
