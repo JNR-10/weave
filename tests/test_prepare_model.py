@@ -1,8 +1,11 @@
-"""Geometry gate for the model lock; needs no download and no MLX."""
+"""Geometry and snapshot gates for the model lock; need no download, hub access, or MLX."""
 
+import hashlib
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -39,3 +42,62 @@ def test_other_geometry_or_quantization_rejected(changes):
         del config["quantization"]
     with pytest.raises(ValueError):
         prepare_model.check_geometry(config)
+
+
+def test_git_blob_sha1_matches_git(tmp_path):
+    path = tmp_path / "config.json"
+    path.write_bytes(b'{"model_type": "qwen2"}\n')
+    git = subprocess.check_output(["git", "hash-object", str(path)], text=True).strip()
+    assert prepare_model.git_blob_sha1(path) == git
+
+
+def test_expected_files_uses_lfs_sha256_or_blob_id():
+    siblings = [
+        SimpleNamespace(rfilename="config.json", size=3, blob_id="b" * 40, lfs=None),
+        SimpleNamespace(
+            rfilename="model.safetensors",
+            size=130,
+            blob_id="c" * 40,
+            lfs=SimpleNamespace(size=9, sha256="d" * 64),
+        ),
+    ]
+    assert prepare_model.expected_files(siblings) == {
+        "config.json": {"size": 3, "git_blob_sha1": "b" * 40},
+        "model.safetensors": {"size": 9, "sha256": "d" * 64},
+    }
+
+
+def snapshot(root):
+    (root / "config.json").write_bytes(b"{}")
+    (root / "model.safetensors").write_bytes(b"weights")
+    return {
+        "config.json": {
+            "size": 2,
+            "git_blob_sha1": prepare_model.git_blob_sha1(root / "config.json"),
+        },
+        "model.safetensors": {"size": 7, "sha256": hashlib.sha256(b"weights").hexdigest()},
+    }
+
+
+def test_verified_snapshot_passes(tmp_path):
+    assert prepare_model.verify_snapshot(tmp_path, snapshot(tmp_path))["ok"]
+
+
+@pytest.mark.parametrize(
+    "damage, failed",
+    [
+        (lambda root: (root / "model.safetensors").write_bytes(b"weightz"), "model.safetensors"),
+        (lambda root: (root / "config.json").unlink(), "config.json"),
+        # mlx_lm.load would also read this file, so it must not pass.
+        (
+            lambda root: (root / "model-00002.safetensors").write_bytes(b"x"),
+            "model-00002.safetensors",
+        ),
+    ],
+)
+def test_damaged_snapshot_fails(tmp_path, damage, failed):
+    expected = snapshot(tmp_path)
+    damage(tmp_path)
+    report = prepare_model.verify_snapshot(tmp_path, expected)
+    assert not report["ok"]
+    assert prepare_model.failures(report) == [failed]
