@@ -1,0 +1,3910 @@
+{
+  "schema_version": "2.0.0",
+  "simulation": true,
+  "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+  "selected_plan_id": null,
+  "candidate_count": 56,
+  "memory_feasible_count": 15,
+  "candidates": [
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-686c50d510196f36",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "single_device",
+      "logical_split": [
+        28
+      ],
+      "mlx_split_by_rank": [
+        28
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 0,
+          "start_layer": 0,
+          "end_layer_exclusive": 28,
+          "layer_count": 28,
+          "memory_components": {
+            "layer_weight_bytes": 3758096384,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 66060288,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5971640320,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2750414848
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2750414848
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-7cb504ce3de7854e",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "single_device",
+      "logical_split": [
+        28
+      ],
+      "mlx_split_by_rank": [
+        28
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 0,
+          "start_layer": 0,
+          "end_layer_exclusive": 28,
+          "layer_count": 28,
+          "memory_components": {
+            "layer_weight_bytes": 3758096384,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 66060288,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5971640320,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 19798163456
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-bfa599b48584765b",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        1,
+        27
+      ],
+      "mlx_split_by_rank": [
+        27,
+        1
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 1,
+          "layer_count": 1,
+          "memory_components": {
+            "layer_weight_bytes": 134217728,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 2359296,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2284060672,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 937164800
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 1,
+          "end_layer_exclusive": 28,
+          "layer_count": 27,
+          "memory_components": {
+            "layer_weight_bytes": 3623878656,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 63700992,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5835063296,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 19934740480
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-37b454254a078ae4",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        2,
+        26
+      ],
+      "mlx_split_by_rank": [
+        26,
+        2
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 2,
+          "layer_count": 2,
+          "memory_components": {
+            "layer_weight_bytes": 268435456,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 4718592,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2420637696,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 800587776
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 2,
+          "end_layer_exclusive": 28,
+          "layer_count": 26,
+          "memory_components": {
+            "layer_weight_bytes": 3489660928,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 61341696,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5698486272,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20071317504
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-67c106d723b41e90",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        3,
+        25
+      ],
+      "mlx_split_by_rank": [
+        25,
+        3
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 3,
+          "layer_count": 3,
+          "memory_components": {
+            "layer_weight_bytes": 402653184,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 7077888,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2557214720,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 664010752
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 3,
+          "end_layer_exclusive": 28,
+          "layer_count": 25,
+          "memory_components": {
+            "layer_weight_bytes": 3355443200,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 58982400,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5561909248,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20207894528
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f8b97474add30257",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        4,
+        24
+      ],
+      "mlx_split_by_rank": [
+        24,
+        4
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 4,
+          "layer_count": 4,
+          "memory_components": {
+            "layer_weight_bytes": 536870912,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 9437184,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2693791744,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 527433728
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 4,
+          "end_layer_exclusive": 28,
+          "layer_count": 24,
+          "memory_components": {
+            "layer_weight_bytes": 3221225472,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 56623104,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5425332224,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20344471552
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-6795ea74840c94a7",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        5,
+        23
+      ],
+      "mlx_split_by_rank": [
+        23,
+        5
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 5,
+          "layer_count": 5,
+          "memory_components": {
+            "layer_weight_bytes": 671088640,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 11796480,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2830368768,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 390856704
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 5,
+          "end_layer_exclusive": 28,
+          "layer_count": 23,
+          "memory_components": {
+            "layer_weight_bytes": 3087007744,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 54263808,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5288755200,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20481048576
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-1354574bff1a6d2d",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        6,
+        22
+      ],
+      "mlx_split_by_rank": [
+        22,
+        6
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 6,
+          "layer_count": 6,
+          "memory_components": {
+            "layer_weight_bytes": 805306368,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 14155776,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2966945792,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 254279680
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 6,
+          "end_layer_exclusive": 28,
+          "layer_count": 22,
+          "memory_components": {
+            "layer_weight_bytes": 2952790016,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 51904512,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5152178176,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20617625600
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-68ec1bc28753c240",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        7,
+        21
+      ],
+      "mlx_split_by_rank": [
+        21,
+        7
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 7,
+          "layer_count": 7,
+          "memory_components": {
+            "layer_weight_bytes": 939524096,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 16515072,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3103522816,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 117702656
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 7,
+          "end_layer_exclusive": 28,
+          "layer_count": 21,
+          "memory_components": {
+            "layer_weight_bytes": 2818572288,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 49545216,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5015601152,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20754202624
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-dff177dbfe70a6e0",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        8,
+        20
+      ],
+      "mlx_split_by_rank": [
+        20,
+        8
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 8,
+          "layer_count": 8,
+          "memory_components": {
+            "layer_weight_bytes": 1073741824,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 18874368,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3240099840,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -18874368
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 8,
+          "end_layer_exclusive": 28,
+          "layer_count": 20,
+          "memory_components": {
+            "layer_weight_bytes": 2684354560,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 47185920,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4879024128,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20890779648
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 18874368
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-bc96271dcfeef6da",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        9,
+        19
+      ],
+      "mlx_split_by_rank": [
+        19,
+        9
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 9,
+          "layer_count": 9,
+          "memory_components": {
+            "layer_weight_bytes": 1207959552,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 21233664,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3376676864,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -155451392
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 9,
+          "end_layer_exclusive": 28,
+          "layer_count": 19,
+          "memory_components": {
+            "layer_weight_bytes": 2550136832,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 44826624,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4742447104,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21027356672
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 155451392
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-2c85bb7a1684390f",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        10,
+        18
+      ],
+      "mlx_split_by_rank": [
+        18,
+        10
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 10,
+          "layer_count": 10,
+          "memory_components": {
+            "layer_weight_bytes": 1342177280,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 23592960,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3513253888,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -292028416
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 10,
+          "end_layer_exclusive": 28,
+          "layer_count": 18,
+          "memory_components": {
+            "layer_weight_bytes": 2415919104,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 42467328,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4605870080,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21163933696
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 292028416
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-d3cebe73bb8483c3",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        11,
+        17
+      ],
+      "mlx_split_by_rank": [
+        17,
+        11
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 11,
+          "layer_count": 11,
+          "memory_components": {
+            "layer_weight_bytes": 1476395008,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 25952256,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3649830912,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -428605440
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 11,
+          "end_layer_exclusive": 28,
+          "layer_count": 17,
+          "memory_components": {
+            "layer_weight_bytes": 2281701376,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 40108032,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4469293056,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21300510720
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 428605440
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f3e5d043cf892417",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        12,
+        16
+      ],
+      "mlx_split_by_rank": [
+        16,
+        12
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 12,
+          "layer_count": 12,
+          "memory_components": {
+            "layer_weight_bytes": 1610612736,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 28311552,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3786407936,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -565182464
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 12,
+          "end_layer_exclusive": 28,
+          "layer_count": 16,
+          "memory_components": {
+            "layer_weight_bytes": 2147483648,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 37748736,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4332716032,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21437087744
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 565182464
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-3d2b3def33f75303",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        13,
+        15
+      ],
+      "mlx_split_by_rank": [
+        15,
+        13
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 13,
+          "layer_count": 13,
+          "memory_components": {
+            "layer_weight_bytes": 1744830464,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 30670848,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3922984960,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -701759488
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 13,
+          "end_layer_exclusive": 28,
+          "layer_count": 15,
+          "memory_components": {
+            "layer_weight_bytes": 2013265920,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 35389440,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4196139008,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21573664768
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 701759488
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f52712c34dc8ad3a",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        14,
+        14
+      ],
+      "mlx_split_by_rank": [
+        14,
+        14
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 14,
+          "layer_count": 14,
+          "memory_components": {
+            "layer_weight_bytes": 1879048192,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 33030144,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4059561984,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -838336512
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 14,
+          "end_layer_exclusive": 28,
+          "layer_count": 14,
+          "memory_components": {
+            "layer_weight_bytes": 1879048192,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 33030144,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4059561984,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21710241792
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 838336512
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-b301cce20b4aca00",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        15,
+        13
+      ],
+      "mlx_split_by_rank": [
+        13,
+        15
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 15,
+          "layer_count": 15,
+          "memory_components": {
+            "layer_weight_bytes": 2013265920,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 35389440,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4196139008,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -974913536
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 15,
+          "end_layer_exclusive": 28,
+          "layer_count": 13,
+          "memory_components": {
+            "layer_weight_bytes": 1744830464,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 30670848,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3922984960,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21846818816
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 974913536
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-63c0282fa97205bb",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        16,
+        12
+      ],
+      "mlx_split_by_rank": [
+        12,
+        16
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 16,
+          "layer_count": 16,
+          "memory_components": {
+            "layer_weight_bytes": 2147483648,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 37748736,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4332716032,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1111490560
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 16,
+          "end_layer_exclusive": 28,
+          "layer_count": 12,
+          "memory_components": {
+            "layer_weight_bytes": 1610612736,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 28311552,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3786407936,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21983395840
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1111490560
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-ead8f640b936dbb8",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        17,
+        11
+      ],
+      "mlx_split_by_rank": [
+        11,
+        17
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 17,
+          "layer_count": 17,
+          "memory_components": {
+            "layer_weight_bytes": 2281701376,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 40108032,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4469293056,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1248067584
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 17,
+          "end_layer_exclusive": 28,
+          "layer_count": 11,
+          "memory_components": {
+            "layer_weight_bytes": 1476395008,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 25952256,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3649830912,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22119972864
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1248067584
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f17dafeacac1f918",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        18,
+        10
+      ],
+      "mlx_split_by_rank": [
+        10,
+        18
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 18,
+          "layer_count": 18,
+          "memory_components": {
+            "layer_weight_bytes": 2415919104,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 42467328,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4605870080,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1384644608
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 18,
+          "end_layer_exclusive": 28,
+          "layer_count": 10,
+          "memory_components": {
+            "layer_weight_bytes": 1342177280,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 23592960,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3513253888,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22256549888
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1384644608
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-fc57b4c5d7093d38",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        19,
+        9
+      ],
+      "mlx_split_by_rank": [
+        9,
+        19
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 19,
+          "layer_count": 19,
+          "memory_components": {
+            "layer_weight_bytes": 2550136832,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 44826624,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4742447104,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1521221632
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 19,
+          "end_layer_exclusive": 28,
+          "layer_count": 9,
+          "memory_components": {
+            "layer_weight_bytes": 1207959552,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 21233664,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3376676864,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22393126912
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1521221632
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-0197269f6d2e76b9",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        20,
+        8
+      ],
+      "mlx_split_by_rank": [
+        8,
+        20
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 20,
+          "layer_count": 20,
+          "memory_components": {
+            "layer_weight_bytes": 2684354560,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 47185920,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4879024128,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1657798656
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 20,
+          "end_layer_exclusive": 28,
+          "layer_count": 8,
+          "memory_components": {
+            "layer_weight_bytes": 1073741824,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 18874368,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3240099840,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22529703936
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1657798656
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-79f6428745d5fbec",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        21,
+        7
+      ],
+      "mlx_split_by_rank": [
+        7,
+        21
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 21,
+          "layer_count": 21,
+          "memory_components": {
+            "layer_weight_bytes": 2818572288,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 49545216,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5015601152,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1794375680
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 21,
+          "end_layer_exclusive": 28,
+          "layer_count": 7,
+          "memory_components": {
+            "layer_weight_bytes": 939524096,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 16515072,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3103522816,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22666280960
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1794375680
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-afdb37817df4cd97",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        22,
+        6
+      ],
+      "mlx_split_by_rank": [
+        6,
+        22
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 22,
+          "layer_count": 22,
+          "memory_components": {
+            "layer_weight_bytes": 2952790016,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 51904512,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5152178176,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1930952704
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 22,
+          "end_layer_exclusive": 28,
+          "layer_count": 6,
+          "memory_components": {
+            "layer_weight_bytes": 805306368,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 14155776,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2966945792,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22802857984
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1930952704
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-3c49ac8574ac62e6",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        23,
+        5
+      ],
+      "mlx_split_by_rank": [
+        5,
+        23
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 23,
+          "layer_count": 23,
+          "memory_components": {
+            "layer_weight_bytes": 3087007744,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 54263808,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5288755200,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2067529728
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 23,
+          "end_layer_exclusive": 28,
+          "layer_count": 5,
+          "memory_components": {
+            "layer_weight_bytes": 671088640,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 11796480,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2830368768,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22939435008
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2067529728
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-775c2f3f63acdb9b",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        24,
+        4
+      ],
+      "mlx_split_by_rank": [
+        4,
+        24
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 24,
+          "layer_count": 24,
+          "memory_components": {
+            "layer_weight_bytes": 3221225472,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 56623104,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5425332224,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2204106752
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 24,
+          "end_layer_exclusive": 28,
+          "layer_count": 4,
+          "memory_components": {
+            "layer_weight_bytes": 536870912,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 9437184,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2693791744,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23076012032
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2204106752
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f7fb7c60e69c049f",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        25,
+        3
+      ],
+      "mlx_split_by_rank": [
+        3,
+        25
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 25,
+          "layer_count": 25,
+          "memory_components": {
+            "layer_weight_bytes": 3355443200,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 58982400,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5561909248,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2340683776
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 25,
+          "end_layer_exclusive": 28,
+          "layer_count": 3,
+          "memory_components": {
+            "layer_weight_bytes": 402653184,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 7077888,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2557214720,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23212589056
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2340683776
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-9670a51ae31178de",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        26,
+        2
+      ],
+      "mlx_split_by_rank": [
+        2,
+        26
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 26,
+          "layer_count": 26,
+          "memory_components": {
+            "layer_weight_bytes": 3489660928,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 61341696,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5698486272,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2477260800
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 26,
+          "end_layer_exclusive": 28,
+          "layer_count": 2,
+          "memory_components": {
+            "layer_weight_bytes": 268435456,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 4718592,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2420637696,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23349166080
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2477260800
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-59daf63c9319a114",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        27,
+        1
+      ],
+      "mlx_split_by_rank": [
+        1,
+        27
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-second-mac",
+        "SIMULATED-m4-pressure"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 27,
+          "layer_count": 27,
+          "memory_components": {
+            "layer_weight_bytes": 3623878656,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 63700992,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5835063296,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2613837824
+        },
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 27,
+          "end_layer_exclusive": 28,
+          "layer_count": 1,
+          "memory_components": {
+            "layer_weight_bytes": 134217728,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 2359296,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2284060672,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23485743104
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2613837824
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-b069d6bd1d54d4da",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        1,
+        27
+      ],
+      "mlx_split_by_rank": [
+        27,
+        1
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 1,
+          "layer_count": 1,
+          "memory_components": {
+            "layer_weight_bytes": 134217728,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 2359296,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2284060672,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23485743104
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 1,
+          "end_layer_exclusive": 28,
+          "layer_count": 27,
+          "memory_components": {
+            "layer_weight_bytes": 3623878656,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 63700992,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5835063296,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2613837824
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2613837824
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-51e6137e52273510",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        2,
+        26
+      ],
+      "mlx_split_by_rank": [
+        26,
+        2
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 2,
+          "layer_count": 2,
+          "memory_components": {
+            "layer_weight_bytes": 268435456,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 4718592,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2420637696,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23349166080
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 2,
+          "end_layer_exclusive": 28,
+          "layer_count": 26,
+          "memory_components": {
+            "layer_weight_bytes": 3489660928,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 61341696,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5698486272,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2477260800
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2477260800
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-5b780a4ed62f9bf1",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        3,
+        25
+      ],
+      "mlx_split_by_rank": [
+        25,
+        3
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 3,
+          "layer_count": 3,
+          "memory_components": {
+            "layer_weight_bytes": 402653184,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 7077888,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2557214720,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23212589056
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 3,
+          "end_layer_exclusive": 28,
+          "layer_count": 25,
+          "memory_components": {
+            "layer_weight_bytes": 3355443200,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 58982400,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5561909248,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2340683776
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2340683776
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-970cd364938bbc08",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        4,
+        24
+      ],
+      "mlx_split_by_rank": [
+        24,
+        4
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 4,
+          "layer_count": 4,
+          "memory_components": {
+            "layer_weight_bytes": 536870912,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 9437184,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2693791744,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 23076012032
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 4,
+          "end_layer_exclusive": 28,
+          "layer_count": 24,
+          "memory_components": {
+            "layer_weight_bytes": 3221225472,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 56623104,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5425332224,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2204106752
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2204106752
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-abd935ac2d21a14c",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        5,
+        23
+      ],
+      "mlx_split_by_rank": [
+        23,
+        5
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 5,
+          "layer_count": 5,
+          "memory_components": {
+            "layer_weight_bytes": 671088640,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 11796480,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2830368768,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22939435008
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 5,
+          "end_layer_exclusive": 28,
+          "layer_count": 23,
+          "memory_components": {
+            "layer_weight_bytes": 3087007744,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 54263808,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5288755200,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -2067529728
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 2067529728
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-114cb66311bf8d49",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        6,
+        22
+      ],
+      "mlx_split_by_rank": [
+        22,
+        6
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 6,
+          "layer_count": 6,
+          "memory_components": {
+            "layer_weight_bytes": 805306368,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 14155776,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2966945792,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22802857984
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 6,
+          "end_layer_exclusive": 28,
+          "layer_count": 22,
+          "memory_components": {
+            "layer_weight_bytes": 2952790016,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 51904512,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5152178176,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1930952704
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1930952704
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-c87440de84321938",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        7,
+        21
+      ],
+      "mlx_split_by_rank": [
+        21,
+        7
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 7,
+          "layer_count": 7,
+          "memory_components": {
+            "layer_weight_bytes": 939524096,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 16515072,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3103522816,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22666280960
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 7,
+          "end_layer_exclusive": 28,
+          "layer_count": 21,
+          "memory_components": {
+            "layer_weight_bytes": 2818572288,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 49545216,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5015601152,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1794375680
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1794375680
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-456570458780f5d6",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        8,
+        20
+      ],
+      "mlx_split_by_rank": [
+        20,
+        8
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 8,
+          "layer_count": 8,
+          "memory_components": {
+            "layer_weight_bytes": 1073741824,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 18874368,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3240099840,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22529703936
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 8,
+          "end_layer_exclusive": 28,
+          "layer_count": 20,
+          "memory_components": {
+            "layer_weight_bytes": 2684354560,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 47185920,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4879024128,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1657798656
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1657798656
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-37f3beaf8a59e302",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        9,
+        19
+      ],
+      "mlx_split_by_rank": [
+        19,
+        9
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 9,
+          "layer_count": 9,
+          "memory_components": {
+            "layer_weight_bytes": 1207959552,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 21233664,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3376676864,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22393126912
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 9,
+          "end_layer_exclusive": 28,
+          "layer_count": 19,
+          "memory_components": {
+            "layer_weight_bytes": 2550136832,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 44826624,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4742447104,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1521221632
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1521221632
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-276514d29c5f56e4",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        10,
+        18
+      ],
+      "mlx_split_by_rank": [
+        18,
+        10
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 10,
+          "layer_count": 10,
+          "memory_components": {
+            "layer_weight_bytes": 1342177280,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 23592960,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3513253888,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22256549888
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 10,
+          "end_layer_exclusive": 28,
+          "layer_count": 18,
+          "memory_components": {
+            "layer_weight_bytes": 2415919104,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 42467328,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4605870080,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1384644608
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1384644608
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-a86b52508b84dd67",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        11,
+        17
+      ],
+      "mlx_split_by_rank": [
+        17,
+        11
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 11,
+          "layer_count": 11,
+          "memory_components": {
+            "layer_weight_bytes": 1476395008,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 25952256,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3649830912,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 22119972864
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 11,
+          "end_layer_exclusive": 28,
+          "layer_count": 17,
+          "memory_components": {
+            "layer_weight_bytes": 2281701376,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 40108032,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4469293056,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1248067584
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1248067584
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-f35d34e161ff8bae",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        12,
+        16
+      ],
+      "mlx_split_by_rank": [
+        16,
+        12
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 12,
+          "layer_count": 12,
+          "memory_components": {
+            "layer_weight_bytes": 1610612736,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 28311552,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3786407936,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21983395840
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 12,
+          "end_layer_exclusive": 28,
+          "layer_count": 16,
+          "memory_components": {
+            "layer_weight_bytes": 2147483648,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 37748736,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4332716032,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -1111490560
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 1111490560
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-40a20e317b71f652",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        13,
+        15
+      ],
+      "mlx_split_by_rank": [
+        15,
+        13
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 13,
+          "layer_count": 13,
+          "memory_components": {
+            "layer_weight_bytes": 1744830464,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 30670848,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3922984960,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21846818816
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 13,
+          "end_layer_exclusive": 28,
+          "layer_count": 15,
+          "memory_components": {
+            "layer_weight_bytes": 2013265920,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 35389440,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4196139008,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -974913536
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 974913536
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-3498ce26b6c9fa5d",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        14,
+        14
+      ],
+      "mlx_split_by_rank": [
+        14,
+        14
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 14,
+          "layer_count": 14,
+          "memory_components": {
+            "layer_weight_bytes": 1879048192,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 33030144,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4059561984,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21710241792
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 14,
+          "end_layer_exclusive": 28,
+          "layer_count": 14,
+          "memory_components": {
+            "layer_weight_bytes": 1879048192,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 33030144,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4059561984,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -838336512
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 838336512
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-634a7bfd1a2fa112",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        15,
+        13
+      ],
+      "mlx_split_by_rank": [
+        13,
+        15
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 15,
+          "layer_count": 15,
+          "memory_components": {
+            "layer_weight_bytes": 2013265920,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 35389440,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4196139008,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21573664768
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 15,
+          "end_layer_exclusive": 28,
+          "layer_count": 13,
+          "memory_components": {
+            "layer_weight_bytes": 1744830464,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 30670848,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3922984960,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -701759488
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 701759488
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-580fb6b609c6ef97",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        16,
+        12
+      ],
+      "mlx_split_by_rank": [
+        12,
+        16
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 16,
+          "layer_count": 16,
+          "memory_components": {
+            "layer_weight_bytes": 2147483648,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 37748736,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4332716032,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21437087744
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 16,
+          "end_layer_exclusive": 28,
+          "layer_count": 12,
+          "memory_components": {
+            "layer_weight_bytes": 1610612736,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 28311552,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3786407936,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -565182464
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 565182464
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-8468071311a17003",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        17,
+        11
+      ],
+      "mlx_split_by_rank": [
+        11,
+        17
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 17,
+          "layer_count": 17,
+          "memory_components": {
+            "layer_weight_bytes": 2281701376,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 40108032,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4469293056,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21300510720
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 17,
+          "end_layer_exclusive": 28,
+          "layer_count": 11,
+          "memory_components": {
+            "layer_weight_bytes": 1476395008,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 25952256,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3649830912,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -428605440
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 428605440
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-27453a4ea8c95c6f",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        18,
+        10
+      ],
+      "mlx_split_by_rank": [
+        10,
+        18
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 18,
+          "layer_count": 18,
+          "memory_components": {
+            "layer_weight_bytes": 2415919104,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 42467328,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4605870080,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21163933696
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 18,
+          "end_layer_exclusive": 28,
+          "layer_count": 10,
+          "memory_components": {
+            "layer_weight_bytes": 1342177280,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 23592960,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3513253888,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -292028416
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 292028416
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-33ae1b94e758fb00",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        19,
+        9
+      ],
+      "mlx_split_by_rank": [
+        9,
+        19
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 19,
+          "layer_count": 19,
+          "memory_components": {
+            "layer_weight_bytes": 2550136832,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 44826624,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4742447104,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 21027356672
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 19,
+          "end_layer_exclusive": 28,
+          "layer_count": 9,
+          "memory_components": {
+            "layer_weight_bytes": 1207959552,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 21233664,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3376676864,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -155451392
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 155451392
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-2667e7dd90675441",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        20,
+        8
+      ],
+      "mlx_split_by_rank": [
+        8,
+        20
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 20,
+          "layer_count": 20,
+          "memory_components": {
+            "layer_weight_bytes": 2684354560,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 47185920,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 4879024128,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20890779648
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 20,
+          "end_layer_exclusive": 28,
+          "layer_count": 8,
+          "memory_components": {
+            "layer_weight_bytes": 1073741824,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 18874368,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3240099840,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": -18874368
+        }
+      ],
+      "memory_feasible": false,
+      "rejection_reasons": [
+        {
+          "code": "MEMORY_BUDGET_EXCEEDED",
+          "device_id": "SIMULATED-m4-pressure",
+          "excess_bytes": 18874368
+        }
+      ],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-197f44ecbd8a1f51",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        21,
+        7
+      ],
+      "mlx_split_by_rank": [
+        7,
+        21
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 21,
+          "layer_count": 21,
+          "memory_components": {
+            "layer_weight_bytes": 2818572288,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 49545216,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5015601152,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20754202624
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 21,
+          "end_layer_exclusive": 28,
+          "layer_count": 7,
+          "memory_components": {
+            "layer_weight_bytes": 939524096,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 16515072,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 3103522816,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 117702656
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-4b31a871f9162f3d",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        22,
+        6
+      ],
+      "mlx_split_by_rank": [
+        6,
+        22
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 22,
+          "layer_count": 22,
+          "memory_components": {
+            "layer_weight_bytes": 2952790016,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 51904512,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5152178176,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20617625600
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 22,
+          "end_layer_exclusive": 28,
+          "layer_count": 6,
+          "memory_components": {
+            "layer_weight_bytes": 805306368,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 14155776,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2966945792,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 254279680
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-ddeb4f0d1b8e9b1a",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        23,
+        5
+      ],
+      "mlx_split_by_rank": [
+        5,
+        23
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 23,
+          "layer_count": 23,
+          "memory_components": {
+            "layer_weight_bytes": 3087007744,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 54263808,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5288755200,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20481048576
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 23,
+          "end_layer_exclusive": 28,
+          "layer_count": 5,
+          "memory_components": {
+            "layer_weight_bytes": 671088640,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 11796480,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2830368768,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 390856704
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-d44d1c2bd3dc2d29",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        24,
+        4
+      ],
+      "mlx_split_by_rank": [
+        4,
+        24
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 24,
+          "layer_count": 24,
+          "memory_components": {
+            "layer_weight_bytes": 3221225472,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 56623104,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5425332224,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20344471552
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 24,
+          "end_layer_exclusive": 28,
+          "layer_count": 4,
+          "memory_components": {
+            "layer_weight_bytes": 536870912,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 9437184,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2693791744,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 527433728
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-def33e8ec833b048",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        25,
+        3
+      ],
+      "mlx_split_by_rank": [
+        3,
+        25
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 25,
+          "layer_count": 25,
+          "memory_components": {
+            "layer_weight_bytes": 3355443200,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 58982400,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5561909248,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20207894528
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 25,
+          "end_layer_exclusive": 28,
+          "layer_count": 3,
+          "memory_components": {
+            "layer_weight_bytes": 402653184,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 7077888,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2557214720,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 664010752
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-c590038e4bebdc74",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        26,
+        2
+      ],
+      "mlx_split_by_rank": [
+        2,
+        26
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 26,
+          "layer_count": 26,
+          "memory_components": {
+            "layer_weight_bytes": 3489660928,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 61341696,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5698486272,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 20071317504
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 26,
+          "end_layer_exclusive": 28,
+          "layer_count": 2,
+          "memory_components": {
+            "layer_weight_bytes": 268435456,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 4718592,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2420637696,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 800587776
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    },
+    {
+      "schema_version": "2.0.0",
+      "plan_id": "candidate-698179161189376d",
+      "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+      "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+      "model_revision": "SIMULATED-NOT-A-MODEL-LOCK",
+      "profile_id": "SIMULATED-weight-profile-v2",
+      "simulation": true,
+      "selected": false,
+      "policy": "candidate_only",
+      "mode": "pipeline",
+      "logical_split": [
+        27,
+        1
+      ],
+      "mlx_split_by_rank": [
+        1,
+        27
+      ],
+      "device_id_by_mlx_rank": [
+        "SIMULATED-m4-pressure",
+        "SIMULATED-second-mac"
+      ],
+      "assignments": [
+        {
+          "device_id": "SIMULATED-second-mac",
+          "logical_stage": 0,
+          "mlx_rank": 1,
+          "start_layer": 0,
+          "end_layer_exclusive": 27,
+          "layer_count": 27,
+          "memory_components": {
+            "layer_weight_bytes": 3623878656,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 63700992,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 5835063296,
+          "safe_process_budget_bytes": 25769803776,
+          "headroom_bytes": 19934740480
+        },
+        {
+          "device_id": "SIMULATED-m4-pressure",
+          "logical_stage": 1,
+          "mlx_rank": 0,
+          "start_layer": 27,
+          "end_layer_exclusive": 28,
+          "layer_count": 1,
+          "memory_components": {
+            "layer_weight_bytes": 134217728,
+            "replicated_weight_bytes": 1073741824,
+            "kv_upper_bound_bytes": 2359296,
+            "workspace_reserve_bytes": 536870912,
+            "safety_margin_bytes": 536870912
+          },
+          "predicted_memory_bytes": 2284060672,
+          "safe_process_budget_bytes": 3221225472,
+          "headroom_bytes": 937164800
+        }
+      ],
+      "memory_feasible": true,
+      "rejection_reasons": [],
+      "runtime_verified": false,
+      "executable": false
+    }
+  ]
+}
