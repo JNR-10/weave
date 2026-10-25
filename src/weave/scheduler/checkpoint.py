@@ -258,12 +258,18 @@ def run(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--state", default=str(DEFAULT_STATE))
-    parser.add_argument("--results-dir", default="results")
+    parser.add_argument("--state", help="default: the committed fixture in this checkout")
+    parser.add_argument("--results-dir", help="default: results/ in this checkout (gitignored)")
     args = parser.parse_args(argv)
+    # Defaults come from the checkout this module was imported from, not the working directory:
+    # run from elsewhere, a relative results/ would land outside the gitignored folder.
+    repo = source_checkout()
+    if repo is None and (args.state is None or args.results_dir is None):
+        parser.error("not running from a source checkout; pass --state and --results-dir")
+    state = Path(args.state) if args.state else repo / DEFAULT_STATE
+    results_dir = Path(args.results_dir) if args.results_dir else repo / "results"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output_dir = Path(args.results_dir) / f"SIMULATED-{stamp}-checkpoint"
-    exit_code, report = run(Path(args.state), output_dir)
+    exit_code, report = run(state, results_dir / f"SIMULATED-{stamp}-checkpoint")
     print(report)
     return exit_code
 

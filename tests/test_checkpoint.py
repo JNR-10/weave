@@ -6,6 +6,7 @@ the remaining tests replace only the test-suite subprocess, a system boundary, w
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -128,3 +129,23 @@ def test_command_writes_a_timestamped_simulated_folder(tmp_path, monkeypatch, ca
         True,
         True,
     )
+
+
+def test_command_finds_the_committed_fixture_from_any_directory(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)  # not the repository
+    monkeypatch.setattr(checkpoint, "run_planner_suite", passing_suite)
+    assert checkpoint.main(["--results-dir", str(tmp_path / "results")]) == 0
+
+
+def test_default_results_folder_is_the_repositorys_own(tmp_path, monkeypatch, capsys):
+    # A results/ folder outside the repository would not be gitignored.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(checkpoint, "run_planner_suite", passing_suite)
+    before = set((ROOT / "results").glob("SIMULATED-*-checkpoint"))
+    try:
+        checkpoint.main([])
+    finally:
+        made = set((ROOT / "results").glob("SIMULATED-*-checkpoint")) - before
+        for folder in made:  # only the test's own output
+            shutil.rmtree(folder)
+    assert (len(made), list(tmp_path.iterdir())) == (1, [])
