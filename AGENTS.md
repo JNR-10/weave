@@ -17,6 +17,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 ## Done means
 
 - `make check` passes, with no new skips and no tests weakened.
+- Commit only after `make check` exits 0. A pipe such as `make check | tail` hides a failure;
+  `make hooks` installs a pre-commit check.
 - Code that needs MLX (the measured runner, `scripts/phase1/`) cannot run on Intel or in CI. Say
   it is unverified instead of claiming it works; the M4 owner runs it.
 - If a check fails, report it with its output. A failing check is a finding.
