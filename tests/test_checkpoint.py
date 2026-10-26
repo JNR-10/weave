@@ -162,3 +162,17 @@ def test_package_records_the_hash_of_the_candidate_file_it_wrote(real_run):
     summary = json.loads((out / "checkpoint.json").read_text())
     written = (out / "candidate_plans.json").read_bytes()
     assert summary["candidate_file_sha256"] == hashlib.sha256(written).hexdigest()
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["candidate_plans.json", "checkpoint.json", "planner-tests.txt", "README.md", "git-diff.patch"],
+)
+def test_state_named_like_a_package_file_is_refused_before_writing(tmp_path, name):
+    # The copy would be overwritten, and the recorded state hash would no longer match it.
+    state = tmp_path / name
+    state.write_bytes(FIXTURE.read_bytes())
+    out = tmp_path / "SIMULATED-clash-checkpoint"
+    with pytest.raises(ValueError, match=r"^state_path: "):
+        run(state, out, run_suite=passing_suite)
+    assert not out.exists()
