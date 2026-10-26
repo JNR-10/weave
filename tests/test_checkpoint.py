@@ -6,7 +6,6 @@ the remaining tests replace only the test-suite subprocess, a system boundary, w
 
 import hashlib
 import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -137,18 +136,11 @@ def test_command_finds_the_committed_fixture_from_any_directory(tmp_path, monkey
     assert checkpoint.main(["--results-dir", str(tmp_path / "results")]) == 0
 
 
-def test_default_results_folder_is_the_repositorys_own(tmp_path, monkeypatch, capsys):
-    # A results/ folder outside the repository would not be gitignored.
+def test_default_results_folder_is_the_repositorys_own(tmp_path, monkeypatch):
+    # A results/ folder outside the repository would not be gitignored. Checked without running
+    # the command, so no test writes into, or deletes from, the real results/ folder.
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(checkpoint, "run_planner_suite", passing_suite)
-    before = set((ROOT / "results").glob("SIMULATED-*-checkpoint"))
-    try:
-        checkpoint.main([])
-    finally:
-        made = set((ROOT / "results").glob("SIMULATED-*-checkpoint")) - before
-        for folder in made:  # only the test's own output
-            shutil.rmtree(folder)
-    assert (len(made), list(tmp_path.iterdir())) == (1, [])
+    assert checkpoint.default_paths() == (FIXTURE, ROOT / "results")
 
 
 def test_package_was_validated_against_the_committed_schema_files(real_run):
