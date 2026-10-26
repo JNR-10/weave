@@ -36,7 +36,7 @@ PLANNER_TESTS = (
     "tests/test_phase1_golden.py",
 )
 # Names the package writes itself, git provenance included; an input state copied in under one of
-# these names would be overwritten.
+# these names, in any letter case on macOS, would be overwritten.
 PACKAGE_FILES = frozenset(
     {
         "candidate_plans.json",
@@ -237,7 +237,7 @@ def run(
             f"got {output_dir.name!r}"
         )
     state_path = Path(state_path)
-    if state_path.name in PACKAGE_FILES:
+    if state_path.name.casefold() in {name.casefold() for name in PACKAGE_FILES}:
         raise ValueError(
             f"state_path: {state_path.name!r} is a name the package writes itself, so its copy "
             "would be overwritten; rename the input"

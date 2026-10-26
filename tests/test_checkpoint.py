@@ -167,7 +167,14 @@ def test_package_records_the_hash_of_the_candidate_file_it_wrote(real_run):
 
 @pytest.mark.parametrize(
     "name",
-    ["candidate_plans.json", "checkpoint.json", "planner-tests.txt", "README.md", "git-diff.patch"],
+    [
+        "candidate_plans.json",
+        "checkpoint.json",
+        "planner-tests.txt",
+        "README.md",
+        "git-diff.patch",
+        "readme.md",  # macOS file systems usually ignore case
+    ],
 )
 def test_state_named_like_a_package_file_is_refused_before_writing(tmp_path, name):
     # The copy would be overwritten, and the recorded state hash would no longer match it.
