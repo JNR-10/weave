@@ -1,0 +1,12 @@
+{
+  "schema_version": "2.0.0",
+  "workload_id": "qwen7b-smoke-v2",
+  "prompt": "Explain model partitioning in two short sentences.",
+  "prompt_max_tokens": 512,
+  "max_new_tokens": 64,
+  "concurrency": 1,
+  "warmup_requests": 1,
+  "measured_requests": 3,
+  "temperature": 0,
+  "seed": 0
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "workload_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "const": "measured"
+    },
+    "simulation": {
+      "const": false
+    },
+    "status": {
+      "enum": [
+        "success",
+        "failed"
+      ]
+    },
+    "policy": {
+      "const": "single_device"
+    },
+    "partition_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "device_id",
+    "model_id",
+    "model_revision",
+    "workload_id",
+    "source",
+    "simulation",
+    "status",
+    "policy",
+    "partition_version",
+    "requests"
+  ],
+  "additionalProperties": true
+}

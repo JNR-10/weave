@@ -65,10 +65,21 @@ Experiment results are evidence for the report, so they need to be reproducible.
 - Note anything that could confound the measurement: background load, thermal state, which
   machines were connected over Thunderbolt versus Ethernet.
 - Repeat runs. macOS timing is noisy; single runs are not a result.
+- Share raw evidence directly with teammates, outside the repository; there is no team archive.
+  Zip the run directories and send the zip together with its checksum
+  (`shasum -a 256 <zip>`).
+- Keep every evidence zip you send or receive in a `donotcheckin/` folder at the repository root.
+  Create it once with `mkdir donotcheckin`; it is gitignored, so nothing in it can be committed by
+  accident. Check a received zip against the sender's checksum before using it, and unzip it into
+  a new, empty directory.
 
 ## Code
 
 - Python, formatted with `ruff format`, linted with `ruff`.
+- Run `make check` before pushing; CI runs the same command on every push and pull request.
+  `make fmt` applies fixes, and `make hooks` (optional) runs the fast checks on each commit.
+- Coding agents read [AGENTS.md](AGENTS.md). When an agent repeats a mistake, add one line
+  there in the same pull request.
 - Type-hint public functions.
 - Docstrings explain *why* a decision is made, not what the line does — the scheduler's reasoning
   is the research contribution and needs to be legible to a reader six months from now.

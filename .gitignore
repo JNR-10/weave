@@ -16,6 +16,7 @@ htmlcov/
 
 # --- Virtual environments ---
 .venv/
+.venv-reproduce/
 venv/
 env/
 .python-version
@@ -30,12 +31,9 @@ models/
 .huggingface/
 
 # --- Experiment output ---
-# Directory structure is tracked via .gitkeep; raw runs are not.
-results/**/*.json
-results/**/*.csv
-results/**/*.jsonl
-results/**/*.parquet
-results/**/*.log
+# Phase 1: raw evidence includes text, source snapshots, and logs.
+/results/*
+!/results/.gitkeep
 logs/
 *.log
 
@@ -52,7 +50,10 @@ logs/
 .vscode/
 .idea/
 *.swp
+.rocketride/
+.env
+.env.*
+!.env.example
 
-
-# --- Local documentation ---
+# --- Local only: evidence zips shared between teammates, private notes (see CONTRIBUTING.md) ---
 donotcheckin/

@@ -1,0 +1,25 @@
+# Fast checks on each commit (`make hooks` installs them). CI runs `make check`, the source of truth.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files # model weights and raw evidence never belong in git
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-yaml
+      - id: detect-private-key
+      # Locks and schemas under experiments/ are hashed byte-for-byte into evidence, and golden
+      # files under tests/golden/ are compared byte-for-byte; never rewrite either.
+      - id: end-of-file-fixer
+        exclude: ^(experiments|tests/golden)/
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: ^(experiments|tests/golden)/
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1 # keep equal to ruff in the requirements locks
+    hooks:
+      # Python files only: ruff 0.17 would also reformat code blocks inside Markdown docs.
+      - id: ruff-check
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]

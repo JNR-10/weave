@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "simulation": {
+      "const": true
+    },
+    "model": {
+      "type": "object",
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "total_layers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "layer_weight_bytes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "replicated_weight_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kv_heads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "head_dim": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kv_bytes_per_element": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source": {
+          "const": "simulated"
+        }
+      },
+      "required": [
+        "model_id",
+        "model_revision",
+        "profile_id",
+        "total_layers",
+        "layer_weight_bytes",
+        "replicated_weight_bytes",
+        "kv_heads",
+        "head_dim",
+        "kv_bytes_per_element",
+        "source"
+      ],
+      "additionalProperties": true
+    },
+    "request_envelope": {
+      "type": "object",
+      "properties": {
+        "prompt_tokens_upper_bound": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_new_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "concurrency": {
+          "const": 1
+        }
+      },
+      "required": [
+        "prompt_tokens_upper_bound",
+        "max_new_tokens",
+        "concurrency"
+      ],
+      "additionalProperties": true
+    },
+    "devices": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "const": "simulated"
+          },
+          "budget_basis": {
+            "const": "fresh_process_absolute"
+          },
+          "safe_process_budget_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "workspace_reserve_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "safety_margin_bytes": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "device_id",
+          "source",
+          "budget_basis",
+          "safe_process_budget_bytes",
+          "workspace_reserve_bytes",
+          "safety_margin_bytes"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "simulation",
+    "model",
+    "request_envelope",
+    "devices"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+# Review routing for pull requests, following the long-term owners in README.md.
+# Later lines take precedence. Owners review; anyone may contribute anywhere.
+*                       @JNR-10 @mohiitt @UShah1996
+/src/weave/profiler/    @mohiitt
+/src/weave/estimator/   @mohiitt
+/src/weave/telemetry/   @mohiitt
+/src/weave/scheduler/   @UShah1996
+/scripts/               @JNR-10
+/benchmarks/            @JNR-10
+/src/weave/contracts/   @JNR-10 @mohiitt @UShah1996
+/experiments/           @JNR-10 @mohiitt @UShah1996

@@ -2004,4 +2004,3 @@ Append to the existing .gitignore; preserve all current content.
 ```
 
 End of revised Phase 1 guide. The appendix code was checked in an isolated repository checkout. Real M4 and distributed gates remain to be completed by the team; no repository changes were pushed or merged.
-
