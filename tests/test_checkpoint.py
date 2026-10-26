@@ -196,3 +196,16 @@ def test_outside_a_checkout_the_command_refuses_before_writing(tmp_path, monkeyp
     with pytest.raises(SystemExit) as refused:
         checkpoint.main(["--state", str(FIXTURE), "--results-dir", str(tmp_path)])
     assert (refused.value.code, list(tmp_path.iterdir())) == (2, [])
+
+
+def test_missing_committed_schema_fails_the_checkpoint(tmp_path, monkeypatch):
+    # The planner rejects every input the schemas reject, so only a missing contract file can
+    # make the schema check fail; that must fail the run, never be skipped.
+    monkeypatch.setattr(checkpoint, "SCHEMA_DIR", tmp_path / "no-schemas")
+    out = tmp_path / "SIMULATED-no-schema-checkpoint"
+    exit_code, _ = run(FIXTURE, out, run_suite=passing_suite)
+    summary = json.loads((out / "checkpoint.json").read_text())
+    assert (exit_code, summary["schema_validation"]["candidate_set"].startswith("fail: ")) == (
+        1,
+        True,
+    )
