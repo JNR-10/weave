@@ -25,7 +25,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 
 ## Never
 
-- Commit anything under `results/` or `models/`, model weights, or secrets (`.env*`, HF tokens).
+- Commit anything under `results/`, `models/` or `donotcheckin/` (evidence zips shared between
+  teammates), model weights, or secrets (`.env*`, HF tokens).
 - Delete, skip, or loosen a test or a validator check to get a green run.
 - Create, edit, or relabel measured evidence, or mix simulated data (`SIMULATED-` IDs,
   `simulation: true`) with measured data.
