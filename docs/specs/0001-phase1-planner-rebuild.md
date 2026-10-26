@@ -1,7 +1,7 @@
 # Spec 0001: Phase 1 planner rebuild and deliverables
 
-- **Status:** implemented (plan steps 1–9 done, review fixes included); the merge waits for
-  Jainil's go-ahead
+- **Status:** implemented (plan steps 1–9 done, step 9 and pre-merge review fixes included); Jainil
+  approved the merge on 2026-10-25, after the pre-merge review
 - **Owner:** Jainil
 - **Branch:** `feat/jainilr-phase1-schedular`; merges into `feat/runtime-phase1-mohit` only when
   Jainil says so
@@ -130,14 +130,17 @@ same run.
   written with exclusive creation (never overwriting).
 - **Checkpoint command:** `python -m weave.scheduler.checkpoint` prints the four section 12.2 items.
   By default it reads the committed fixture and writes under the repository's gitignored results
-  folder, both resolved from the checkout the module was imported from, never the working directory;
-  outside a checkout, `--state` and `--results-dir` are required. Each run creates a new
+  folder, both resolved from the checkout the module was imported from, never the working directory.
+  Outside a source checkout it refuses before writing anything, because the package records that
+  checkout's planner tests and committed schema files. Each run creates a new
   `SIMULATED-<UTC timestamp>-checkpoint` directory, refusing an existing one and any name without the
   SIMULATED- prefix (guide sections 5.1 and 8), so simulated evidence is always labeled. It holds a
   byte copy of the input state, the candidate file, a machine-readable summary (hashes, counts, check
   results, the source commit and whether it had uncommitted changes, the demo's plan IDs), the planner
-  test output and a README; when the source was dirty, also the tracked diff and the untracked source
-  (guide section 12.1 asks for the source commit). Schema validation checks the files as written
+  test output (the new suites and the guide's reference tests) and a README; when the source was
+  dirty, also the tracked diff and the untracked source (guide section 12.1 asks for the source
+  commit). The copy keeps the input's file name, so an input named like one of the package's own
+  files is refused before the directory is created. Schema validation checks the files as written
   against the committed 2.0.0 schema files and records each schema file's hash. For an input without a
   rejected logical [10, 18], the demo shows another rejected split. It needs the dev environment
   (`make setup`) for `jsonschema`, and exits non-zero if the planner tests or the schema validation
@@ -154,7 +157,9 @@ same run.
 - **A good test** drives a public interface with realistic input and asserts on what a caller can
   observe: the returned values, the written file and the raised error. No private helpers, and no
   mocks except at a system boundary: the checkpoint's test-suite subprocess may be replaced by a fake,
-  including a failing one to prove the non-zero exit. A test may raise the public Phase 1 device-limit
+  including a failing one to prove the non-zero exit, and its checkout lookup may report no checkout
+  to prove the refusal. A test may point the checkpoint's schema folder at an empty directory (a real
+  missing contract file, not a fake) and may raise the public Phase 1 device-limit
   setting to exercise the general core through `generate`.
 - **Seams (confirmed):**
   1. `generate` and the candidate command, for the whole output: the golden comparison, 56
@@ -177,8 +182,11 @@ same run.
   by hand (3 alone + 6 ordered pairs × 27 cuts + 6 orders of three × C(27, 2)).
 - **Checkpoint command:** run against temporary directories and from outside the repository; assert
   the printed items, that the recorded hashes match the written files and the committed schema files,
-  that the default folder is the repository's own results folder, that a failing planner suite exits
-  non-zero, and that an existing or unlabeled directory is refused.
+  that the default folder is the repository's own results folder (checked without writing into it),
+  that a failing planner suite or a missing schema file exits non-zero, that an existing or unlabeled
+  directory, an input named like a package file and a run outside a checkout are refused, and that
+  the recorded test run covers every test file of the planner modules. No test writes into the
+  repository's results folder.
 - **Prior art:** the existing candidate tests (parametrized exact-cover checks), the schema-drift
   test (comparing generated artifacts with committed ones), the evidence corruption table (one case
   per failure, matched on the message), and the repo-rule tests (failure messages that say how to
@@ -210,11 +218,16 @@ same run.
   depend on the working directory, its evidence is validated against the committed schema files, and
   three rules gained tests (plan IDs ignore the model revision, the candidate-file hash, three Macs).
   The spec was amended to record the deliberate choices above.
+- The pre-merge review (standards and spec, against Mohit's branch) led to five more fixes: no test
+  writes into the real results folder any more, an input named like a package file is refused, the
+  recorded test run includes the guide's reference tests, the command refuses to run outside a
+  checkout, and a missing schema file has a test. The review's naming, duplication and
+  shared-constant suggestions were left as judgement calls.
 
 ## Plan
 
-Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–9 are
-done; step 10 waits for Jainil's go-ahead.
+Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–9 and
+the pre-merge review are done; Jainil approved step 10 on 2026-10-25.
 
 1. **Spec:** add this spec and the AGENTS.md pointer.
 2. **Golden reference:** save today's candidate file with the tests; add the byte-for-byte golden test
