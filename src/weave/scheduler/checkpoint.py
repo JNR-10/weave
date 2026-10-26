@@ -311,8 +311,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--results-dir", help="default: results/ in this checkout (gitignored)")
     args = parser.parse_args(argv)
     defaults = default_paths()
-    if defaults is None and (args.state is None or args.results_dir is None):
-        parser.error("not running from a source checkout; pass --state and --results-dir")
+    if defaults is None:
+        # The package records this checkout's planner tests and committed schemas; without them
+        # it could only record failures, so refuse before writing anything.
+        parser.error("run from a source checkout (editable install): the evidence needs its tests")
     state = Path(args.state) if args.state else defaults[0]
     results_dir = Path(args.results_dir) if args.results_dir else defaults[1]
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

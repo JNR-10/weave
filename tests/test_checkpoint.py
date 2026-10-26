@@ -188,3 +188,11 @@ def test_evidence_runs_every_test_file_of_the_planner_modules():
         if planner.search(p.read_text())
     }
     assert importers - set(checkpoint.PLANNER_TESTS) == set()
+
+
+def test_outside_a_checkout_the_command_refuses_before_writing(tmp_path, monkeypatch, capsys):
+    # Without the checkout's planner tests and committed schemas the package could only fail.
+    monkeypatch.setattr(checkpoint, "source_checkout", lambda: None)
+    with pytest.raises(SystemExit) as refused:
+        checkpoint.main(["--state", str(FIXTURE), "--results-dir", str(tmp_path)])
+    assert (refused.value.code, list(tmp_path.iterdir())) == (2, [])
