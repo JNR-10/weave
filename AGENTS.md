@@ -17,6 +17,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 ## Done means
 
 - `make check` passes, with no new skips and no tests weakened.
+- Commit only after `make check` exits 0. A pipe such as `make check | tail` hides a failure;
+  `make hooks` installs a pre-commit check.
 - Code that needs MLX (the measured runner, `scripts/phase1/`) cannot run on Intel or in CI. Say
   it is unverified instead of claiming it works; the M4 owner runs it.
 - If a check fails, report it with its output. A failing check is a finding.
@@ -61,6 +63,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 - Phase 1 runbook: `docs/Initial_Implementation_Guide.md` (rank mapping in section 7, evidence
   rules in section 8, gates in section 12).
 - Interface 2.0.0 contract (draft): `meetings/phase1-interface-freeze.md`.
+- Feature specs and their step plans: `docs/specs/`. Read the relevant spec before changing that
+  feature.
 
 ## Keeping this file useful
 

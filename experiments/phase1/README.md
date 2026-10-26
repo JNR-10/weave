@@ -35,6 +35,12 @@ python -m weave.scheduler.candidates \
 
 Expected: 56 candidates, 15 memory-feasible, `selected_plan_id` null. The `[10, 18]` split with the pressure device first is rejected with `MEMORY_BUDGET_EXCEEDED`.
 
+For the G4 checkpoint (guide section 12.2), one command prints the four demo items (a single-Mac plan, an accepted split, the rejected `[10, 18]` split, and the `[10, 18]` → MLX `[18, 10]` rank mapping) and writes the evidence package into a new `results/SIMULATED-<UTC time>-checkpoint/`: the fixture copy and its hash, the candidate file, schema and planner-test results, the git commit and a README. It exits non-zero if a check fails. Run it from a clean, committed checkout so the evidence names the exact source:
+
+```sh
+python -m weave.scheduler.checkpoint
+```
+
 ## M4 setup
 
 Native arm64 Python 3.11.17 at `/opt/homebrew/bin/python3.11`. Do not measure under Rosetta.

@@ -1,6 +1,14 @@
 """Conservative absolute process-memory accounting, not a runtime capacity proof."""
 
 from collections.abc import Sequence
+from typing import Any
+
+
+def _positive_int(value: Any, name: str) -> int:
+    # bool is a subclass of int in Python, so `type(...) is int` keeps true/false out.
+    if type(value) is not int or value < 1:
+        raise ValueError(f"{name}: expected a positive integer, got {value!r}")
+    return value
 
 
 def estimate_stage_memory(
@@ -15,35 +23,40 @@ def estimate_stage_memory(
     workspace_reserve_bytes: int,
     safety_margin_bytes: int,
 ) -> dict[str, int]:
-    """Keep each cost explicit so a feasible estimate cannot hide an omitted term."""
-    values = {
-        "replicated_weight_bytes": replicated_weight_bytes,
-        "total_tokens": total_tokens,
-        "kv_heads": kv_heads,
-        "head_dim": head_dim,
-        "kv_bytes_per_element": kv_bytes_per_element,
-        "concurrency": concurrency,
-        "workspace_reserve_bytes": workspace_reserve_bytes,
-        "safety_margin_bytes": safety_margin_bytes,
-    }
-    if not layer_weight_bytes or any(type(n) is not int or n <= 0 for n in layer_weight_bytes):
-        raise ValueError("assigned layer bytes must be nonempty positive integers")
-    for name, value in values.items():
-        if type(value) is not int or value <= 0:
-            raise ValueError(f"{name} must be a positive integer")
-    kv_bytes = (
-        2
-        * len(layer_weight_bytes)
-        * total_tokens
-        * kv_heads
-        * head_dim
-        * kv_bytes_per_element
-        * concurrency
+    """One pipeline stage's predicted memory, term by term (guide section 10), in integer bytes.
+
+    Every term stays visible in the result, so a feasible estimate can never hide an omitted
+    cost, and no term has a default or may be zero. Replicated weights are charged in full to
+    every stage, because the current Qwen pipeline keeps the embeddings, final norm and output
+    head on every rank.
+
+    The KV bound holds a key and a value (the 2) for every assigned layer, concurrent request and
+    token, with no allocation rounding. MLX actually allocates its cache in 256-token steps, at
+    the cache's own dtype; fitting that is Phase 2 calibration, not a Phase 1 fix.
+    """
+    if not layer_weight_bytes:
+        raise ValueError("layer_weight_bytes: expected at least one layer")
+    layers = [
+        _positive_int(n, f"layer_weight_bytes[{i}]") for i, n in enumerate(layer_weight_bytes)
+    ]
+    for name, value in (
+        ("replicated_weight_bytes", replicated_weight_bytes),
+        ("total_tokens", total_tokens),
+        ("kv_heads", kv_heads),
+        ("head_dim", head_dim),
+        ("kv_bytes_per_element", kv_bytes_per_element),
+        ("concurrency", concurrency),
+        ("workspace_reserve_bytes", workspace_reserve_bytes),
+        ("safety_margin_bytes", safety_margin_bytes),
+    ):
+        _positive_int(value, name)
+    kv_upper_bound = (
+        2 * len(layers) * concurrency * total_tokens * kv_heads * head_dim * kv_bytes_per_element
     )
     return {
-        "layer_weight_bytes": sum(layer_weight_bytes),
+        "layer_weight_bytes": sum(layers),
         "replicated_weight_bytes": replicated_weight_bytes,
-        "kv_upper_bound_bytes": kv_bytes,
+        "kv_upper_bound_bytes": kv_upper_bound,
         "workspace_reserve_bytes": workspace_reserve_bytes,
         "safety_margin_bytes": safety_margin_bytes,
     }
