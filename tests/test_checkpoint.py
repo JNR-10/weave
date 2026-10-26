@@ -6,6 +6,7 @@ the remaining tests replace only the test-suite subprocess, a system boundary, w
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -176,3 +177,14 @@ def test_state_named_like_a_package_file_is_refused_before_writing(tmp_path, nam
     with pytest.raises(ValueError, match=r"^state_path: "):
         run(state, out, run_suite=passing_suite)
     assert not out.exists()
+
+
+def test_evidence_runs_every_test_file_of_the_planner_modules():
+    # The guide's reference tests (tests/test_candidates.py) included: G4 is judged on them.
+    planner = re.compile(r"weave\.(scheduler\.candidates|estimator|profiler\.simulated_fixture)")
+    importers = {
+        f"tests/{p.name}"
+        for p in (ROOT / "tests").glob("test_*.py")
+        if planner.search(p.read_text())
+    }
+    assert importers - set(checkpoint.PLANNER_TESTS) == set()

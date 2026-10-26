@@ -24,9 +24,10 @@ from weave.telemetry.baseline import git_provenance, source_checkout
 
 DEFAULT_STATE = Path("experiments/phase1/cluster-state-SIMULATED.json")
 SCHEMA_DIR = Path("experiments/phase1/schemas/v2")
-# The planner's own suites (spec 0001). This command's tests are deliberately not listed, so
-# running the suite can never start this command again.
+# The planner's own suites (spec 0001) and the guide's reference tests, which gate G4 runs. This
+# command's tests are deliberately not listed, so running the suite can never start it again.
 PLANNER_TESTS = (
+    "tests/test_candidates.py",
     "tests/test_planner_input.py",
     "tests/test_planner_mapping.py",
     "tests/test_memory_estimate.py",
