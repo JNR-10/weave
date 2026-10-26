@@ -2,7 +2,7 @@
 
 Checkpoint: hardware-limited bring-up on Mohit's M4 MacBook Air (16 GB, Mac16,13). Two-Mac inference is out of scope for this gate. Simulated candidate output is not measured evidence.
 
-Pinned source commit at first measured run: `8ac11046aa181d9122bb362f94b4cabb85e238e5` (working tree then had Phase 1 files uncommitted). Those runs are superseded; see [Measured evidence](#measured-evidence-gitignored-under-results).
+Pinned source commit at first measured run: `8ac11046aa181d9122bb362f94b4cabb85e238e5` (working tree then had Phase 1 files uncommitted). Those runs are superseded. The 2026-10-25 acceptance rerun used clean commit `0875258c1fb1fe2c1e44328ae7a4b686390aef8f`; see [Measured evidence](#measured-evidence-gitignored-under-results).
 
 ## Portable setup (Intel or Apple Silicon, no MLX)
 
@@ -133,23 +133,49 @@ python -m weave.telemetry.validate_evidence "results/TAMPER-CHECK/$PHASE1_RUN_ID
 
 ## Measured evidence (gitignored under `results/`)
 
-Evidence archive: not yet agreed. Record the shared location here once the team picks one; an ignored local directory is not an archive.
+Sharing: raw evidence is shared directly between teammates as a zip plus its SHA-256, outside the repository and with no team archive; see Experiments in [CONTRIBUTING.md](../../CONTRIBUTING.md). Keep the zips in your local `donotcheckin/` folder, which is gitignored. Mohit's zip of `results/` from 2026-10-25 is `weave-phase1-m4-evidence-20261025T224835Z.zip`, SHA-256 `81cfedc907de3a7c237e052bab64d31670595377097b7fa9707261ab62ec15fe`. It holds the runs below and the 2026-10-22 attempts.
+
+### 2026-10-25 acceptance rerun
+
+Recorded on the M4 at `0875258c1fb1fe2c1e44328ae7a4b686390aef8f` with no uncommitted changes and no untracked source (`git_dirty: false`). The checkout's only untracked files were outside `src/` (`.claude/`, `.cursor/` and a copy of the guide).
+
+Environment: MacBook Air Mac16,13, Apple M4, 17,179,869,184 bytes (16 GiB), macOS 26.6.2 (25G83), native arm64 Python 3.11.17, mlx 0.32.4, mlx-lm 0.32.2. The installed packages match `requirements-m4-lock.txt` exactly. AC power, Low Power Mode off, foreground apps Finder, Electron, WhatsApp and Cursor. Thermal state was not recorded. Weights were cached at `models/qwen7b`. `pytest` on the M4: 86 passed, 0 skipped, so the installed `[18, 10]` mapping test ran.
+
+| Run | Role | Result |
+| --- | --- | --- |
+| `ENV-20261025T224835Z-m4air-v3` | snapshot verification, MLX probe, session logs | snapshot `ok: true`; Qwen2 inherits `PipelineMixin`; `sharded_load` makes 2 pipeline calls |
+| `20261025T224855Z-m4air-b0-qwen7b-v2` | acceptance, full token trace | validator PASS |
+| `20261025T224908Z-m4air-overhead-full` | overhead full | validator PASS |
+| `20261025T224918Z-m4air-overhead-boundary` | overhead boundary | validator PASS |
+| `20261025T224928Z-m4air-overhead-boundary` | overhead boundary | validator PASS |
+| `20261025T224938Z-m4air-overhead-full` | overhead full | validator PASS |
+| `INVALID-CHECK` | negative check 1: concurrency 2 | refused with `ValueError`, exit 1, no run directory created |
+| `TAMPER-CHECK` | negative check 2: acceptance copy with one TTFT raised by 1 ms | validator fails with `summary/trace mismatch: ttft_ms`, exit 1 |
+
+Acceptance run, three measured requests after the excluded warmup: 39 prompt tokens and 28 generated tokens each, with the same text every time. TTFT 360.4, 353.8 and 360.5 ms (median 360.4 ms). End to end 1511.7, 1509.3 and 1521.9 ms (median 1511.7 ms). Median observed time per output token 42.0 ms. Times are the instrumented stream callback's wall time, including tokenization and excluding model load.
+
+Token-logging overhead, in the order full, boundary, boundary, full (median of each run's measured end-to-end times): full 1507.6 and 1517.8 ms, boundary 1501.5 and 1525.5 ms. Median full 1512.7 ms vs boundary 1513.5 ms, a difference of −0.8 ms (−0.05%). This is below the 5% investigation trigger and isolates per-token CSV rows only.
+
+Memory: request MLX peak 4,441,795,936 bytes (4.14 GiB) and model-load MLX peak 4,287,507,464 bytes (3.99 GiB), both from `mx.get_peak_memory`. The `mlx_lm.generate` log's "4.442 GB" is the same request peak in decimal GB. Parameter profile `profile-b92f137a195e799f` is identical in all five runs: 28 × 131,111,936 layer bytes plus 613,129,216 replicated bytes (embeddings, final norm, output head). It excludes KV, workspace and OS memory.
+
+Independent check: the validator from `0875258`, run on Intel against the unzipped runs, gives the same results. The tamper copy differs from the acceptance run only in that one TTFT, and the invalid input differs from the smoke workload only in `concurrency`.
+
+The 2026-10-22 attempts took about twice as long (end to end about 3.1 s, TTFT about 0.81 s), with the same tokens, text and memory peaks. Their power state was not recorded, so timings from the two days must not be compared.
 
 ### 2026-10-22 runs (superseded)
 
-These were recorded at `8ac1104` with the Phase 1 files uncommitted, and before the runner copied its inputs byte-for-byte, so they fail the current validator's provenance and input-hash checks. Keep them as attempts; the rerun from a clean commit is the acceptance evidence.
+These were recorded at `8ac1104` with the Phase 1 files uncommitted, and before the runner copied its inputs byte-for-byte, so they fail the current validator's provenance and input-hash checks. Keep them as attempts; the 2026-10-25 rerun from a clean commit is the acceptance evidence.
 
 | Run | Role |
 | --- | --- |
-| `20261022T080429Z-m4air-b0-qwen7b-v2` | acceptance full token-trace (validator PASS) |
+| `20261022T080429Z-m4air-b0-qwen7b-v2` | acceptance full token-trace (passed the validator of that time) |
 | `20261022T080503Z-m4air-overhead-boundary` | overhead boundary |
 | `20261022T080521Z-m4air-overhead-boundary` | overhead boundary |
 | `20261022T080539Z-m4air-overhead-full` | overhead full |
-| `20261022T071535Z-m4air-env-v2` | environment freeze and MLX probe |
+| `20261022T071329Z-m4air-env-v2` | environment inventory before and after install |
+| `20261022T071535Z-m4air-env-v2` | environment freeze, model download logs, CLI smoke and MLX probe |
 
-Token-logging overhead: median measured end-to-end 3133.2 ms (full) vs 3093.6 ms (boundary), +1.3%. Below the 5% investigation trigger. Isolates per-token CSV rows only.
-
-Parameter profile: 28 × 131,111,936 layer bytes plus 613,129,216 replicated bytes (embeddings, final norm, output head). Excludes KV, workspace, and OS memory. Request MLX peak ≈ 4.44 GiB.
+Token-logging overhead then: median measured end-to-end 3133.2 ms (full) vs 3093.6 ms (boundary), +1.3%. The parameter profile bytes and memory peaks were the same as on 2026-10-25.
 
 ## Reproduce from the M4 lock
 

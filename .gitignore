@@ -55,5 +55,5 @@ logs/
 .env.*
 !.env.example
 
-# --- Local documentation ---
+# --- Local only: evidence zips shared between teammates, private notes (see CONTRIBUTING.md) ---
 donotcheckin/

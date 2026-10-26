@@ -65,6 +65,13 @@ Experiment results are evidence for the report, so they need to be reproducible.
 - Note anything that could confound the measurement: background load, thermal state, which
   machines were connected over Thunderbolt versus Ethernet.
 - Repeat runs. macOS timing is noisy; single runs are not a result.
+- Share raw evidence directly with teammates, outside the repository; there is no team archive.
+  Zip the run directories and send the zip together with its checksum
+  (`shasum -a 256 <zip>`).
+- Keep every evidence zip you send or receive in a `donotcheckin/` folder at the repository root.
+  Create it once with `mkdir donotcheckin`; it is gitignored, so nothing in it can be committed by
+  accident. Check a received zip against the sender's checksum before using it, and unzip it into
+  a new, empty directory.
 
 ## Code
 
