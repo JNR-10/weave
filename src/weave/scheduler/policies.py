@@ -584,13 +584,65 @@ def decide(candidate_bytes: bytes, policy: str) -> dict[str, Any]:
     return decision_record(choice, candidate_set, digest)
 
 
+def compare(candidate_bytes: bytes) -> str:
+    """Run every policy on one candidate file and return the choices as a Markdown table.
+
+    All policies read the same bytes, so the baselines are compared on identical input; this is
+    the first piece of the ablation harness. The output is Markdown so it can be pasted into a
+    pull request or report, and memory is integer bytes, never GiB. The bytes are hashed once and
+    parsed once, and the policies run in POLICIES order. The text has no trailing newline.
+    """
+    digest = hashlib.sha256(candidate_bytes).hexdigest()
+    candidate_set = read_candidate_set(json.loads(candidate_bytes))
+    snapshot = candidate_set.source_snapshot_id
+    lines = [
+        f"Placement policies on candidate set {snapshot} (sha256 {digest}).",
+        "",
+        "Simulated: each plan passes or fails a stated memory estimate; none is executable or "
+        "runtime-verified.",
+        "",
+        "| policy | outcome | plan_id | logical split | device order | headroom bytes per stage |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for policy in POLICIES.values():
+        choice = policy(candidate_set)
+        plan = choice.plan
+        if plan is None:
+            cells = ["none", "none", "none", "none"]
+        else:
+            cells = [
+                plan.plan_id,
+                str(list(plan.logical_split)),
+                ", ".join(plan.device_order),
+                ", ".join(str(h) for h in plan.headroom_bytes),
+            ]
+        lines.append("| " + " | ".join([choice.policy, choice.outcome, *cells]) + " |")
+    return "\n".join(lines)
+
+
 def main() -> None:
-    """Write one decision record. Like the candidate command, it never overwrites a file."""
+    """Write one decision record (--policy), or print every policy's choice (--compare).
+
+    The record mode, like the candidate command, never overwrites a file. The compare mode writes
+    no file, so it takes neither --policy nor --output.
+    """
     p = argparse.ArgumentParser()
     p.add_argument("--candidates", required=True)
-    p.add_argument("--policy", required=True, choices=list(POLICIES))
-    p.add_argument("--output", required=True)
+    p.add_argument("--policy", choices=list(POLICIES))
+    p.add_argument("--output")
+    p.add_argument(
+        "--compare",
+        action="store_true",
+        help="print every policy's choice as a Markdown table; writes no file",
+    )
     args = p.parse_args()
+    if args.compare:
+        if args.policy or args.output:
+            p.error("--compare takes no --policy or --output")
+        print(compare(Path(args.candidates).read_bytes()))
+        return
+    if args.policy is None or args.output is None:
+        p.error("--policy and --output are required unless --compare is given")
     record = decide(Path(args.candidates).read_bytes(), args.policy)
     with Path(args.output).open("x") as f:
         json.dump(record, f, indent=2)
