@@ -354,3 +354,59 @@ def read_candidate_set(raw: Any) -> CandidateSet:
         devices=tuple(singles.values()),
         candidates=tuple(entry.candidate for entry in parsed),
     )
+
+
+# Policies. Each computes the plan it wants, finds it among the candidates and reports the
+# candidate's own memory verdict; none falls back to another plan (spec 0002).
+
+FEASIBLE = "FEASIBLE"
+INFEASIBLE = "INFEASIBLE"
+NO_FEASIBLE_PLAN = "NO_FEASIBLE_PLAN"
+
+BEST_SINGLE_DEVICE = "best_single_device"
+
+
+@dataclass(frozen=True)
+class PolicyChoice:
+    """What one policy chose from a candidate set, and why.
+
+    `plan` is None only for NO_FEASIBLE_PLAN. A choice is not executable and not runtime-verified;
+    it is a static pick on an estimate. `reason` is deterministic text, so a later decision record
+    and golden comparison can carry it verbatim.
+    """
+
+    policy: str
+    outcome: str
+    plan: Candidate | None
+    reason: str
+
+
+def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
+    """The "don't distribute" baseline: the single Mac with the most headroom that fits.
+
+    Guide section 14 lists single-node MLX on the best single device as a baseline, so it must
+    always exist for distribution to have something to beat. For each Mac in device order this
+    looks up its single-device plan, keeps those that pass the memory estimate and picks the one
+    with the largest headroom. A tie goes to the earlier Mac, because a later plan replaces the
+    pick only when strictly greater. When no Mac fits alone the outcome is NO_FEASIBLE_PLAN and no
+    plan is chosen: a missing baseline is reported, never replaced by a plan that does not fit.
+    """
+    best: Candidate | None = None
+    for device in candidate_set.devices:
+        plan = candidate_set.find((device.device_id,), (candidate_set.total_layers,))
+        if not plan.memory_feasible:
+            continue
+        if best is None or plan.headroom_bytes[0] > best.headroom_bytes[0]:
+            best = plan
+    if best is None:
+        return PolicyChoice(
+            BEST_SINGLE_DEVICE,
+            NO_FEASIBLE_PLAN,
+            None,
+            "no single-device plan fits its Mac's budget",
+        )
+    reason = (
+        f"{best.device_order[0]} alone has the most headroom of the single-device plans "
+        f"that fit: {best.headroom_bytes[0]} bytes"
+    )
+    return PolicyChoice(BEST_SINGLE_DEVICE, FEASIBLE, best, reason)
