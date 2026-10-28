@@ -365,6 +365,7 @@ NO_FEASIBLE_PLAN = "NO_FEASIBLE_PLAN"
 
 BEST_SINGLE_DEVICE = "best_single_device"
 EQUAL_SPLIT = "equal_split"
+MEMORY_PROPORTIONAL = "memory_proportional"
 
 
 @dataclass(frozen=True)
@@ -452,3 +453,80 @@ def equal_split(candidate_set: CandidateSet) -> PolicyChoice:
             f"equal split {list(counts)} on {list(order)} fails the memory estimate on {failing}"
         )
     return PolicyChoice(EQUAL_SPLIT, outcome, plan, reason)
+
+
+def memory_proportional_counts(total_layers: int, rooms: Sequence[int]) -> tuple[int, ...]:
+    """Layers per Mac in device order, shared in proportion to each Mac's room for layers.
+
+    All steps use exact integer arithmetic, so a rounding never depends on float error:
+
+    1. Validate. A str is a sequence, so only a list or tuple of non-negative ints is accepted,
+       and bool is refused because it is an int in Python. Each Mac needs at least one layer, so
+       fewer layers than Macs cannot be shared.
+    2. If no Mac has any room, every quota is equal, so the answer is the equal split.
+    3. Largest remainder. Each Mac first gets the floor of its quota, total_layers * room // sum
+       of rooms. The layers left over then go one each to the Macs with the largest remainders,
+       and a tie goes to the earlier Mac, so one input names one split.
+    4. At least one layer per Mac. A Mac with almost no room can floor to zero, and a stage cannot
+       be empty. Each such Mac, in order, takes one layer from the Mac with the most layers (the
+       earliest on a tie). With total_layers >= len(rooms), that Mac always has two or more.
+
+    Public so the rule can be tested for any number of Macs without a candidate set.
+    """
+    layers = _positive_int(total_layers, "total_layers")
+    if not isinstance(rooms, (list, tuple)) or not rooms:
+        raise ValueError(f"rooms: expected a non-empty sequence, got {rooms!r}")
+    for i, room in enumerate(rooms):
+        if type(room) is not int or room < 0:
+            raise ValueError(f"rooms[{i}]: expected a non-negative integer, got {room!r}")
+    if layers < len(rooms):
+        raise ValueError(
+            f"total_layers: {layers} layers cannot give each of {len(rooms)} Macs at least one"
+        )
+    total_room = sum(rooms)
+    if total_room == 0:
+        return equal_split_counts(layers, len(rooms))
+    counts = [layers * room // total_room for room in rooms]
+    remainders = [layers * room % total_room for room in rooms]
+    leftover = layers - sum(counts)
+    by_remainder = sorted(range(len(rooms)), key=lambda i: (-remainders[i], i))
+    for i in by_remainder[:leftover]:
+        counts[i] += 1
+    for i in range(len(counts)):
+        if counts[i] == 0:
+            donor = counts.index(max(counts))
+            counts[donor] -= 1
+            counts[i] += 1
+    return tuple(counts)
+
+
+def memory_proportional(candidate_set: CandidateSet) -> PolicyChoice:
+    """The hardware-aware static baseline: layers shared in proportion to each Mac's room.
+
+    Guide section 14 lists deterministic memory-based placement as a baseline. A Mac's room for
+    layers is its safe process budget minus the bytes every stage pays regardless of layers
+    (Device.fixed_stage_bytes), floored at zero. Proportion is by layer count, which matches bytes
+    only while layers weigh the same. It reports the plan even when it fails the memory estimate:
+    a baseline that does not fit is a result to count, and it is never replaced by a fallback.
+    """
+    order = tuple(device.device_id for device in candidate_set.devices)
+    rooms = tuple(
+        max(device.safe_process_budget_bytes - device.fixed_stage_bytes, 0)
+        for device in candidate_set.devices
+    )
+    counts = memory_proportional_counts(candidate_set.total_layers, rooms)
+    plan = candidate_set.find(order, counts)
+    if plan.memory_feasible:
+        outcome = FEASIBLE
+        reason = (
+            f"memory-proportional split {list(counts)} on {list(order)} from room {list(rooms)} "
+            "bytes passes the memory estimate"
+        )
+    else:
+        outcome = INFEASIBLE
+        failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
+        reason = (
+            f"memory-proportional split {list(counts)} on {list(order)} from room {list(rooms)} "
+            f"bytes fails the memory estimate on {failing}"
+        )
+    return PolicyChoice(MEMORY_PROPORTIONAL, outcome, plan, reason)
