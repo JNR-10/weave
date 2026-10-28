@@ -364,6 +364,7 @@ INFEASIBLE = "INFEASIBLE"
 NO_FEASIBLE_PLAN = "NO_FEASIBLE_PLAN"
 
 BEST_SINGLE_DEVICE = "best_single_device"
+EQUAL_SPLIT = "equal_split"
 
 
 @dataclass(frozen=True)
@@ -410,3 +411,44 @@ def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
         f"that fit: {best.headroom_bytes[0]} bytes"
     )
     return PolicyChoice(BEST_SINGLE_DEVICE, FEASIBLE, best, reason)
+
+
+def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
+    """Layers per Mac in device order, shared as evenly as whole layers allow.
+
+    Every Mac gets total_layers // device_count and the first total_layers % device_count Macs get
+    one more. The remainder goes to the earliest stages so that "the equal split" names one plan: a
+    fixed, written rule, with no choice left about which Macs carry the extra layer. Public so the
+    rule can be tested for any number of Macs without a candidate set.
+    """
+    layers = _positive_int(total_layers, "total_layers")
+    devices = _positive_int(device_count, "device_count")
+    if layers < devices:
+        raise ValueError(
+            f"total_layers: {layers} layers cannot give each of {devices} Macs at least one"
+        )
+    base, extra = divmod(layers, devices)
+    return tuple(base + 1 if i < extra else base for i in range(devices))
+
+
+def equal_split(candidate_set: CandidateSet) -> PolicyChoice:
+    """The weakest common baseline: the same number of layers on every Mac.
+
+    Guide section 14 and the README evaluation ladder start at the equal split. It spreads the
+    layers over every Mac in device order, with one fixed order and no search. It reports the plan
+    even when it fails the memory estimate: a baseline that does not fit is a result to count, and
+    it is never replaced by a fallback plan.
+    """
+    order = tuple(device.device_id for device in candidate_set.devices)
+    counts = equal_split_counts(candidate_set.total_layers, len(order))
+    plan = candidate_set.find(order, counts)
+    if plan.memory_feasible:
+        outcome = FEASIBLE
+        reason = f"equal split {list(counts)} on {list(order)} passes the memory estimate"
+    else:
+        outcome = INFEASIBLE
+        failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
+        reason = (
+            f"equal split {list(counts)} on {list(order)} fails the memory estimate on {failing}"
+        )
+    return PolicyChoice(EQUAL_SPLIT, outcome, plan, reason)
