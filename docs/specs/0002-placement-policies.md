@@ -74,7 +74,8 @@ Proposed; confirm or change before step 2.
 - **Read once:** the candidate set is parsed into immutable typed records (standard-library
   dataclasses). It is refused, with a `ValueError` naming the field, when the schema version is not
   2.0.0; the set or any candidate is not simulated; `selected_plan_id` is not null; any candidate is
-  selected, executable, runtime-verified or has a policy other than `candidate_only`; plan IDs repeat;
+  selected, executable, runtime-verified or has a policy other than `candidate_only`; a candidate's
+  `memory_feasible` contradicts its rejection reasons; plan IDs repeat;
   candidates disagree on the snapshot ID or the layer total; or there is not exactly one
   single-device candidate per Mac.
 - **Device order:** the order of the single-device candidates (the state's device order). A
@@ -115,8 +116,11 @@ Proposed; confirm or change before step 2.
 
 - **A good test** drives a public function or command with realistic input and asserts on what a
   caller observes: the chosen plan ID, the outcome, the written file and the raised error. No
-  private helpers and no mocks. Inputs are the committed fixture's candidate set (generated in the
-  test with `generate`) or small hand-built sets made the same way from edited states.
+  private helpers and no mocks. The input is the committed fixture's candidate set, read from
+  `tests/golden/phase1-candidate-plans.json` (which `tests/test_phase1_golden.py` holds to the
+  generator byte for byte) and edited per case. Policy tests do not import the planner modules:
+  `tests/test_checkpoint.py` requires every test file that does to be part of the planner's
+  checkpoint evidence, and policy tests are not.
 - **Worked numbers for the committed fixture** (28 layers of 134,217,728 bytes; KV 2,359,296 bytes
   per layer; fixed costs 2,147,483,648 bytes per stage):
   - Best single Mac: `SIMULATED-second-mac` alone, headroom 19,798,163,456 bytes. The pressure Mac
