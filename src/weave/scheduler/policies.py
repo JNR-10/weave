@@ -6,9 +6,13 @@ The candidate set is read once into immutable records, so a policy never works f
 from a set that is malformed, partly selected, or not wholly simulated.
 """
 
+import argparse
 import copy
-from collections.abc import Sequence
+import hashlib
+import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from weave.scheduler.candidates import VERSION
@@ -530,3 +534,68 @@ def memory_proportional(candidate_set: CandidateSet) -> PolicyChoice:
             f"bytes fails the memory estimate on {failing}"
         )
     return PolicyChoice(MEMORY_PROPORTIONAL, outcome, plan, reason)
+
+
+POLICIES: dict[str, Callable[[CandidateSet], PolicyChoice]] = {
+    BEST_SINGLE_DEVICE: best_single_device,
+    EQUAL_SPLIT: equal_split,
+    MEMORY_PROPORTIONAL: memory_proportional,
+}
+
+
+def decision_record(
+    choice: PolicyChoice, candidate_set: CandidateSet, candidate_set_sha256: str
+) -> dict[str, Any]:
+    """The decision record for one policy choice (spec 0002, step 6).
+
+    The plan is "chosen", not "selected", so the candidate set's selected_plan_id stays the only
+    "selected" field and stays null. candidate_set_sha256 ties the decision to the exact candidate
+    file it was made from. The safety flags are fixed (guide section 8): a static choice on an
+    estimate is simulated, not executable and not runtime-verified. chosen_plan_id is None exactly
+    when the outcome is NO_FEASIBLE_PLAN, and the rejection reasons are copies of the plan's own.
+    """
+    plan = choice.plan
+    reasons = [copy.deepcopy(r) for r in plan.rejection_reasons] if plan is not None else []
+    return {
+        "schema_version": VERSION,
+        "simulation": True,
+        "policy": choice.policy,
+        "source_snapshot_id": candidate_set.source_snapshot_id,
+        "candidate_set_sha256": candidate_set_sha256,
+        "chosen_plan_id": plan.plan_id if plan is not None else None,
+        "outcome": choice.outcome,
+        "reason": choice.reason,
+        "rejection_reasons": reasons,
+        "executable": False,
+        "runtime_verified": False,
+    }
+
+
+def decide(candidate_bytes: bytes, policy: str) -> dict[str, Any]:
+    """Run one policy on a candidate file's bytes and return its decision record.
+
+    The hash is taken over the bytes as read, before parsing, so it names the exact file.
+    """
+    if policy not in POLICIES:
+        raise ValueError(f"policy: expected one of {list(POLICIES)}, got {policy!r}")
+    digest = hashlib.sha256(candidate_bytes).hexdigest()
+    candidate_set = read_candidate_set(json.loads(candidate_bytes))
+    choice = POLICIES[policy](candidate_set)
+    return decision_record(choice, candidate_set, digest)
+
+
+def main() -> None:
+    """Write one decision record. Like the candidate command, it never overwrites a file."""
+    p = argparse.ArgumentParser()
+    p.add_argument("--candidates", required=True)
+    p.add_argument("--policy", required=True, choices=list(POLICIES))
+    p.add_argument("--output", required=True)
+    args = p.parse_args()
+    record = decide(Path(args.candidates).read_bytes(), args.policy)
+    with Path(args.output).open("x") as f:
+        json.dump(record, f, indent=2)
+    print(json.dumps(record, indent=2))
+
+
+if __name__ == "__main__":
+    main()

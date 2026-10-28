@@ -30,8 +30,9 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 - Delete, skip, or loosen a test or a validator check to get a green run.
 - Create, edit, or relabel measured evidence, or mix simulated data (`SIMULATED-` IDs,
   `simulation: true`) with measured data.
-- Edit committed contracts in place: `experiments/phase1/schemas/v2/`, `model-lock.json`, the
-  `requirements-*-lock.txt` files. Their bytes are hashed into evidence.
+- Edit committed contracts in place: `experiments/phase1/schemas/v2/`,
+  `experiments/policies/schemas/v2/`, `model-lock.json`, the `requirements-*-lock.txt` files. Their
+  bytes are hashed into evidence.
 - Import MLX, `mlx_lm`, `psutil` or `huggingface_hub` at module level under `src/weave/`.
   Portable code must import on Intel; import inside the function that needs it.
 - Start a measured run from a checkout with uncommitted changes; the validator rejects it.
