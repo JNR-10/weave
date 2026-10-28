@@ -96,6 +96,14 @@ def test_a_split_that_fails_the_estimate_is_reported_not_replaced():
     assert choice.reason == INFEASIBLE_REASON
 
 
+def test_a_missing_proportional_plan_is_refused_not_replaced():
+    raw = candidate_set()
+    raw["candidates"].remove(_plan(raw, [1, 27], PRESSURE))
+    candidates = read_candidate_set(raw)
+    with pytest.raises(ValueError, match="not among the candidates"):
+        memory_proportional(candidates)
+
+
 def test_the_split_follows_the_budgets():
     raw = candidate_set()
     # The pressure Mac gets the second Mac's budget in every candidate, so the reader's check that

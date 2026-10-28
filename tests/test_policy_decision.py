@@ -136,6 +136,11 @@ def test_unknown_policy_is_refused():
         policies.decide(GOLDEN.read_bytes(), "adaptive")
 
 
+def test_a_file_that_is_not_json_is_refused_as_a_value_error():
+    with pytest.raises(ValueError, match="candidate file: not valid JSON"):
+        policies.decide(b"not json", "equal_split")
+
+
 @pytest.mark.parametrize(
     "changes",
     [

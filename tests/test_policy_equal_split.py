@@ -134,6 +134,14 @@ def test_a_model_with_fewer_layers_than_macs_is_refused():
         equal_split(candidates)
 
 
+def test_a_missing_equal_split_plan_is_refused_not_replaced():
+    raw = candidate_set()
+    raw["candidates"].remove(_even_split_plan(raw, PRESSURE))
+    candidates = read_candidate_set(raw)
+    with pytest.raises(ValueError, match="not among the candidates"):
+        equal_split(candidates)
+
+
 def test_the_equal_split_never_searches_device_orders():
     raw = candidate_set()
     other = read_candidate_set(raw).find((SECOND, PRESSURE), (14, 14))

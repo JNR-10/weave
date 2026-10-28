@@ -98,7 +98,9 @@ def test_reading_never_mutates_the_input_or_points_into_it():
     result = read_candidate_set(raw)
     assert raw == before
     plan = result.find((PRESSURE, SECOND), (10, 18))
-    plan.rejection_reasons[0]["excess_bytes"] = 0
+    with pytest.raises(TypeError):
+        plan.rejection_reasons[0]["excess_bytes"] = 0
+    assert plan.rejection_reasons[0]["excess_bytes"] == 292028416
     assert raw == before
 
 
@@ -298,6 +300,16 @@ INVALID = [
         "candidate-reason-not-object",
         _cand(0, rejection_reasons=[5]),
         "candidates[0].rejection_reasons[0]: expected a JSON object, got int",
+    ),
+    (
+        "candidate-reason-without-device",
+        _apply(lambda raw: raw["candidates"][0]["rejection_reasons"][0].pop("device_id")),
+        "candidates[0].rejection_reasons[0].device_id: required",
+    ),
+    (
+        "candidate-reason-code-empty",
+        _apply(lambda raw: raw["candidates"][0]["rejection_reasons"][0].update(code="")),
+        "candidates[0].rejection_reasons[0].code: expected a non-empty string",
     ),
     (
         "candidate-assignments-not-list",

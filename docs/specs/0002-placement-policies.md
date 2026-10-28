@@ -1,7 +1,8 @@
 # Spec 0002: Static placement policies over the candidate set
 
-- **Status:** draft. The implementation decisions below are proposed; Urmi confirms them before
-  step 2, and Jainil and Mohit sign off on the decision record (step 6) before it is built
+- **Status:** implemented (plan steps 1–8 done, including the step 8 review fixes). Urmi confirmed
+  the implementation decisions before step 2 and decided the decision record (step 6) herself on
+  2026-10-28 to avoid stalling; Jainil and Mohit confirm or change it in the pull request
 - **Owner:** Urmi
 - **Branch:** `feat/urmi-scheduler-placement-policies`, merged into `main` through a pull request
   reviewed by Jainil and Mohit
@@ -63,7 +64,7 @@ set. This is the first piece of the ablation harness.
 
 ## Implementation Decisions
 
-Proposed; confirm or change before step 2.
+Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (see Further Notes).
 
 - **New module:** `weave.scheduler.policies`. No change to `weave.scheduler.candidates`, the
   estimator, the fixture or any committed schema in steps 2–5 and 7.
@@ -75,9 +76,14 @@ Proposed; confirm or change before step 2.
   dataclasses). It is refused, with a `ValueError` naming the field, when the schema version is not
   2.0.0; the set or any candidate is not simulated; `selected_plan_id` is not null; any candidate is
   selected, executable, runtime-verified or has a policy other than `candidate_only`; a candidate's
-  `memory_feasible` contradicts its rejection reasons; plan IDs repeat;
-  candidates disagree on the snapshot ID or the layer total; or there is not exactly one
-  single-device candidate per Mac.
+  `memory_feasible` contradicts its rejection reasons; a rejection reason lacks a `code` or
+  `device_id`; plan IDs repeat; candidates disagree on the snapshot ID or the layer total; or there
+  is not exactly one single-device candidate per Mac. Because a policy trusts these records, the
+  reader also refuses what would make them inconsistent: a `mode` that disagrees with the stage
+  count, a stage whose `logical_stage` or `layer_count` disagrees with `logical_split`, a Mac named
+  twice in one plan, and a Mac whose budget or fixed costs differ between candidates. Rejection
+  reasons are kept as read-only copies, so the records are immutable all the way down. A candidate
+  file that is not valid JSON is refused with a `ValueError` naming the candidate file.
 - **Device order:** the order of the single-device candidates (the state's device order). A
   multi-Mac policy places its stages in that order; it does not search the other orders, because a
   static baseline has one fixed layout.
@@ -157,17 +163,30 @@ Proposed; confirm or change before step 2.
 
 ## Further Notes
 
-- Decisions to confirm before step 2: the memory-proportional definition of room (budget minus
-  fixed costs, not the raw budget); reporting infeasible baselines instead of falling back; one
-  fixed device order; deferring the profiled policy.
+- Urmi confirmed before step 2: the memory-proportional definition of room (budget minus fixed
+  costs, not the raw budget); reporting infeasible baselines instead of falling back; one fixed
+  device order; deferring the profiled policy.
 - The decision record is an interface addition under AGENTS.md "Ask first". To avoid stalling,
   Urmi decided it on 2026-10-28 (additive under 2.0.0, its own schema folder, `chosen_plan_id`);
   the pull request asks Jainil and Mohit to confirm, and any change they ask for lands before merge.
 - With the raw budget instead, the fixture's memory-proportional split would be `[3, 25]`.
+- Beyond the plan steps: AGENTS.md lists `experiments/policies/schemas/v2/` among the contracts
+  never edited in place (step 6), and `experiments/phase1/README.md` documents the policy commands
+  (step 7).
+- Three or more Macs: the policy tests hand-build a minimal three-Mac candidate set from golden
+  pieces, because policy tests may not import the planner modules.
+- Step 8's two-axis review (standards and spec) led to these fixes: the spec's status and decision
+  wording were brought up to date; a rejection reason without `device_id` is refused at the read
+  instead of failing later with a `KeyError`; rejection reasons became read-only; non-JSON input
+  names the candidate file; a missing plan and three Macs are tested through the policies; and the
+  shared verdict, parsing and layer-count code was extracted. Left as judgement calls: an enum for
+  policy and outcome names, a shared test `conftest.py`, and reusing `weave.contracts.schemas.main`
+  for the decision schema, which would change a shared Phase 1 module.
 
 ## Plan
 
-Each step is test-first, passes `make check`, and is committed and pushed on its own.
+Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–8
+are done.
 
 1. **Spec:** add this spec.
 2. **Input reading:** typed candidate-set records and the invalid-input table.

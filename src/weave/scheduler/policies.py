@@ -10,7 +10,8 @@ import argparse
 import copy
 import hashlib
 import json
-from collections.abc import Callable, Sequence
+import types
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -54,7 +55,7 @@ def _boolean(obj: dict[str, Any], key: str, parent: str) -> bool:
     return value
 
 
-def _flag(obj: dict[str, Any], key: str, expected: bool, parent: str) -> None:
+def _expect_bool(obj: dict[str, Any], key: str, expected: bool, parent: str) -> None:
     """Refuse anything but the one safe value; `is not` also keeps 0 and 1 out."""
     value = _get(obj, key, parent)
     if value is not expected:
@@ -107,6 +108,14 @@ class Device:
             self.replicated_weight_bytes + self.workspace_reserve_bytes + self.safety_margin_bytes
         )
 
+    @property
+    def room_for_layers_bytes(self) -> int:
+        """The budget left for layers after the costs every stage pays.
+
+        Floored at zero because a Mac cannot have negative room (spec 0002, memory-proportional).
+        """
+        return max(self.safe_process_budget_bytes - self.fixed_stage_bytes, 0)
+
 
 @dataclass(frozen=True)
 class Candidate:
@@ -121,7 +130,7 @@ class Candidate:
     logical_split: tuple[int, ...]
     memory_feasible: bool
     headroom_bytes: tuple[int, ...]
-    rejection_reasons: tuple[dict[str, Any], ...]
+    rejection_reasons: tuple[Mapping[str, Any], ...]
 
 
 @dataclass(frozen=True)
@@ -136,6 +145,11 @@ class CandidateSet:
     total_layers: int
     devices: tuple[Device, ...]
     candidates: tuple[Candidate, ...]
+
+    @property
+    def device_ids(self) -> tuple[str, ...]:
+        """The Macs' ids in device order."""
+        return tuple(device.device_id for device in self.devices)
 
     def find(self, device_order: Sequence[str], logical_split: Sequence[int]) -> Candidate:
         """The candidate for this device order and split, or ValueError if there is none.
@@ -211,11 +225,24 @@ def _parse_split(raw: Any, path: str) -> tuple[int, ...]:
     return tuple(_positive_int(n, _path(path, k)) for k, n in enumerate(raw))
 
 
-def _parse_reasons(raw: Any, path: str) -> tuple[dict[str, Any], ...]:
-    """Rejection reasons are carried through as given; a copy keeps the input untouched."""
+def _parse_reasons(raw: Any, path: str) -> tuple[Mapping[str, Any], ...]:
+    """Rejection reasons as read-only copies, each with a non-empty `code` and `device_id`.
+
+    Policies carry the reasons into decision records and read `device_id` from them, so a reason
+    without one is refused here, naming the field, rather than failing later with a KeyError. Each
+    reason is a deep copy behind a read-only view, so nothing returned can be changed and nothing
+    returned points into the input.
+    """
     if not isinstance(raw, list):
         raise ValueError(f"{path}: expected a list, got {type(raw).__name__}")
-    return tuple(copy.deepcopy(_object(item, _path(path, k))) for k, item in enumerate(raw))
+    reasons: list[Mapping[str, Any]] = []
+    for k, item in enumerate(raw):
+        reason_path = _path(path, k)
+        obj = _object(item, reason_path)
+        _text(obj, "code", reason_path)
+        _text(obj, "device_id", reason_path)
+        reasons.append(types.MappingProxyType(copy.deepcopy(obj)))
+    return tuple(reasons)
 
 
 def _parse_candidate(raw: Any, index: int, snapshot_id: str) -> _ParsedCandidate:
@@ -223,10 +250,10 @@ def _parse_candidate(raw: Any, index: int, snapshot_id: str) -> _ParsedCandidate
     obj = _object(raw, parent)
     _check_version(obj, parent)
     # The Phase 1 safety boundary: a candidate is never a decision, and never measured data.
-    _flag(obj, "simulation", True, parent)
-    _flag(obj, "selected", False, parent)
-    _flag(obj, "executable", False, parent)
-    _flag(obj, "runtime_verified", False, parent)
+    _expect_bool(obj, "simulation", True, parent)
+    _expect_bool(obj, "selected", False, parent)
+    _expect_bool(obj, "executable", False, parent)
+    _expect_bool(obj, "runtime_verified", False, parent)
     policy = _get(obj, "policy", parent)
     if policy != "candidate_only":
         where = _path(parent, "policy")
@@ -330,7 +357,7 @@ def read_candidate_set(raw: Any) -> CandidateSet:
     """
     top = _object(raw, "candidate_set")
     _check_version(top, "")
-    _flag(top, "simulation", True, "")
+    _expect_bool(top, "simulation", True, "")
     selected = _get(top, "selected_plan_id", "")
     if selected is not None:
         raise ValueError(f"selected_plan_id: expected null, got {selected!r}")
@@ -418,6 +445,27 @@ def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
     return PolicyChoice(BEST_SINGLE_DEVICE, FEASIBLE, best, reason)
 
 
+def _require_one_layer_each(layers: int, devices: int) -> None:
+    """Refuse a model with fewer layers than Macs: a stage cannot be empty."""
+    if layers < devices:
+        raise ValueError(
+            f"total_layers: {layers} layers cannot give each of {devices} Macs at least one"
+        )
+
+
+def _split_choice(policy: str, description: str, plan: Candidate) -> PolicyChoice:
+    """Report the plan's own memory verdict, with `description` naming the split it is.
+
+    Both split policies report the plan even when it fails the estimate, so the reason text and
+    the outcome come from one place. The failing Macs are the ones its rejection reasons name.
+    """
+    if plan.memory_feasible:
+        return PolicyChoice(policy, FEASIBLE, plan, f"{description} passes the memory estimate")
+    failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
+    reason = f"{description} fails the memory estimate on {failing}"
+    return PolicyChoice(policy, INFEASIBLE, plan, reason)
+
+
 def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
     """Layers per Mac in device order, shared as evenly as whole layers allow.
 
@@ -428,10 +476,7 @@ def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
     """
     layers = _positive_int(total_layers, "total_layers")
     devices = _positive_int(device_count, "device_count")
-    if layers < devices:
-        raise ValueError(
-            f"total_layers: {layers} layers cannot give each of {devices} Macs at least one"
-        )
+    _require_one_layer_each(layers, devices)
     base, extra = divmod(layers, devices)
     return tuple(base + 1 if i < extra else base for i in range(devices))
 
@@ -444,19 +489,10 @@ def equal_split(candidate_set: CandidateSet) -> PolicyChoice:
     even when it fails the memory estimate: a baseline that does not fit is a result to count, and
     it is never replaced by a fallback plan.
     """
-    order = tuple(device.device_id for device in candidate_set.devices)
+    order = candidate_set.device_ids
     counts = equal_split_counts(candidate_set.total_layers, len(order))
     plan = candidate_set.find(order, counts)
-    if plan.memory_feasible:
-        outcome = FEASIBLE
-        reason = f"equal split {list(counts)} on {list(order)} passes the memory estimate"
-    else:
-        outcome = INFEASIBLE
-        failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
-        reason = (
-            f"equal split {list(counts)} on {list(order)} fails the memory estimate on {failing}"
-        )
-    return PolicyChoice(EQUAL_SPLIT, outcome, plan, reason)
+    return _split_choice(EQUAL_SPLIT, f"equal split {list(counts)} on {list(order)}", plan)
 
 
 def memory_proportional_counts(total_layers: int, rooms: Sequence[int]) -> tuple[int, ...]:
@@ -483,10 +519,7 @@ def memory_proportional_counts(total_layers: int, rooms: Sequence[int]) -> tuple
     for i, room in enumerate(rooms):
         if type(room) is not int or room < 0:
             raise ValueError(f"rooms[{i}]: expected a non-negative integer, got {room!r}")
-    if layers < len(rooms):
-        raise ValueError(
-            f"total_layers: {layers} layers cannot give each of {len(rooms)} Macs at least one"
-        )
+    _require_one_layer_each(layers, len(rooms))
     total_room = sum(rooms)
     if total_room == 0:
         return equal_split_counts(layers, len(rooms))
@@ -513,27 +546,14 @@ def memory_proportional(candidate_set: CandidateSet) -> PolicyChoice:
     only while layers weigh the same. It reports the plan even when it fails the memory estimate:
     a baseline that does not fit is a result to count, and it is never replaced by a fallback.
     """
-    order = tuple(device.device_id for device in candidate_set.devices)
-    rooms = tuple(
-        max(device.safe_process_budget_bytes - device.fixed_stage_bytes, 0)
-        for device in candidate_set.devices
-    )
+    order = candidate_set.device_ids
+    rooms = tuple(device.room_for_layers_bytes for device in candidate_set.devices)
     counts = memory_proportional_counts(candidate_set.total_layers, rooms)
     plan = candidate_set.find(order, counts)
-    if plan.memory_feasible:
-        outcome = FEASIBLE
-        reason = (
-            f"memory-proportional split {list(counts)} on {list(order)} from room {list(rooms)} "
-            "bytes passes the memory estimate"
-        )
-    else:
-        outcome = INFEASIBLE
-        failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
-        reason = (
-            f"memory-proportional split {list(counts)} on {list(order)} from room {list(rooms)} "
-            f"bytes fails the memory estimate on {failing}"
-        )
-    return PolicyChoice(MEMORY_PROPORTIONAL, outcome, plan, reason)
+    description = (
+        f"memory-proportional split {list(counts)} on {list(order)} from room {list(rooms)} bytes"
+    )
+    return _split_choice(MEMORY_PROPORTIONAL, description, plan)
 
 
 POLICIES: dict[str, Callable[[CandidateSet], PolicyChoice]] = {
@@ -555,7 +575,7 @@ def decision_record(
     when the outcome is NO_FEASIBLE_PLAN, and the rejection reasons are copies of the plan's own.
     """
     plan = choice.plan
-    reasons = [copy.deepcopy(r) for r in plan.rejection_reasons] if plan is not None else []
+    reasons = [copy.deepcopy(dict(r)) for r in plan.rejection_reasons] if plan is not None else []
     return {
         "schema_version": VERSION,
         "simulation": True,
@@ -571,6 +591,20 @@ def decision_record(
     }
 
 
+def _read_candidate_file(candidate_bytes: bytes) -> tuple[str, CandidateSet]:
+    """The SHA-256 of a candidate file's bytes as given, and the candidate set read from them.
+
+    The hash is taken before parsing, so it names the exact file. A file that is not JSON is
+    refused as a ValueError, like every other malformed input.
+    """
+    digest = hashlib.sha256(candidate_bytes).hexdigest()
+    try:
+        raw = json.loads(candidate_bytes)
+    except ValueError as error:
+        raise ValueError(f"candidate file: not valid JSON ({error})") from error
+    return digest, read_candidate_set(raw)
+
+
 def decide(candidate_bytes: bytes, policy: str) -> dict[str, Any]:
     """Run one policy on a candidate file's bytes and return its decision record.
 
@@ -578,8 +612,7 @@ def decide(candidate_bytes: bytes, policy: str) -> dict[str, Any]:
     """
     if policy not in POLICIES:
         raise ValueError(f"policy: expected one of {list(POLICIES)}, got {policy!r}")
-    digest = hashlib.sha256(candidate_bytes).hexdigest()
-    candidate_set = read_candidate_set(json.loads(candidate_bytes))
+    digest, candidate_set = _read_candidate_file(candidate_bytes)
     choice = POLICIES[policy](candidate_set)
     return decision_record(choice, candidate_set, digest)
 
@@ -592,8 +625,7 @@ def compare(candidate_bytes: bytes) -> str:
     pull request or report, and memory is integer bytes, never GiB. The bytes are hashed once and
     parsed once, and the policies run in POLICIES order. The text has no trailing newline.
     """
-    digest = hashlib.sha256(candidate_bytes).hexdigest()
-    candidate_set = read_candidate_set(json.loads(candidate_bytes))
+    digest, candidate_set = _read_candidate_file(candidate_bytes)
     snapshot = candidate_set.source_snapshot_id
     lines = [
         f"Placement policies on candidate set {snapshot} (sha256 {digest}).",
