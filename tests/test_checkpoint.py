@@ -203,12 +203,31 @@ def uses_planner(text: str) -> bool:
     )
 
 
+def is_planner_test(name: str, text: str) -> bool:
+    """Whether a test file is one of the planner's, so the G4 evidence must run it.
+
+    Spec 0001 asks for every test file of the planner modules, not every file that uses them.
+    Policy tests (spec 0002, `test_policy_*`) may build candidate sets with the generator; they
+    test the policies, so their results are not planner evidence.
+    """
+    return uses_planner(text) and not name.startswith("test_policy_")
+
+
 def test_evidence_runs_every_test_file_of_the_planner_modules():
     # The guide's reference tests (tests/test_candidates.py) included: G4 is judged on them.
     planner_tests = {
-        f"tests/{p.name}" for p in (ROOT / "tests").glob("test_*.py") if uses_planner(p.read_text())
+        f"tests/{p.name}"
+        for p in (ROOT / "tests").glob("test_*.py")
+        if is_planner_test(p.name, p.read_text())
     }
     assert planner_tests - set(checkpoint.PLANNER_TESTS) == set()
+
+
+def test_a_policy_test_may_build_its_input_with_the_generator():
+    # Spec 0002's tests make candidate sets with the planner; they test the policies, not it.
+    text = "from weave.scheduler import candidates, policies\n"
+    assert is_planner_test("test_planner_candidates.py", text)
+    assert not is_planner_test("test_policy_three_macs.py", text)
 
 
 def test_a_from_import_of_a_planner_module_counts_as_using_it():
