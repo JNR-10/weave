@@ -4,6 +4,7 @@ One real run (with the real planner test suite) is shared by the tests that insp
 the remaining tests replace only the test-suite subprocess, a system boundary, with a fake.
 """
 
+import ast
 import hashlib
 import json
 import re
@@ -186,15 +187,36 @@ def test_state_named_like_a_package_file_is_refused_before_writing(tmp_path, nam
     assert not out.exists()
 
 
+# Escaped, so this file's own source does not match it.
+PLANNER_MODULE = re.compile(r"weave\.(scheduler\.candidates|estimator|profiler\.simulated_fixture)")
+
+
+def uses_planner(text: str) -> bool:
+    """Whether test source names a planner module, also as `from weave import estimator`."""
+    if PLANNER_MODULE.search(text):
+        return True
+    return any(
+        PLANNER_MODULE.fullmatch(f"{node.module}.{alias.name}")
+        for node in ast.walk(ast.parse(text))
+        if isinstance(node, ast.ImportFrom) and node.module
+        for alias in node.names
+    )
+
+
 def test_evidence_runs_every_test_file_of_the_planner_modules():
     # The guide's reference tests (tests/test_candidates.py) included: G4 is judged on them.
-    planner = re.compile(r"weave\.(scheduler\.candidates|estimator|profiler\.simulated_fixture)")
-    importers = {
-        f"tests/{p.name}"
-        for p in (ROOT / "tests").glob("test_*.py")
-        if planner.search(p.read_text())
+    planner_tests = {
+        f"tests/{p.name}" for p in (ROOT / "tests").glob("test_*.py") if uses_planner(p.read_text())
     }
-    assert importers - set(checkpoint.PLANNER_TESTS) == set()
+    assert planner_tests - set(checkpoint.PLANNER_TESTS) == set()
+
+
+def test_a_from_import_of_a_planner_module_counts_as_using_it():
+    # tests/test_phase1_golden.py imports this way, so the guard must see it.
+    assert uses_planner("from weave.scheduler import candidates\n")
+    assert uses_planner("from weave.scheduler import (\n    checkpoint,\n    candidates,\n)\n")
+    assert uses_planner("from weave import estimator\n")
+    assert not uses_planner("from weave.scheduler import checkpoint, policies\n")
 
 
 def test_outside_a_checkout_the_command_refuses_before_writing(tmp_path, monkeypatch, capsys):
