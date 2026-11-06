@@ -109,7 +109,7 @@ def test_equal_split_record_on_the_golden_file_is_exact():
     }
 
 
-def test_no_feasible_plan_record_has_no_chosen_plan():
+def test_no_feasible_plan_record_names_every_failing_mac():
     raw = golden()
     second_alone = raw["candidates"][1]
     assert second_alone["assignments"][0]["device_id"] == SECOND
@@ -125,7 +125,11 @@ def test_no_feasible_plan_record_has_no_chosen_plan():
 
     assert record["chosen_plan_id"] is None
     assert record["outcome"] == "NO_FEASIBLE_PLAN"
-    assert record["rejection_reasons"] == []
+    # Device order: the pressure Mac's reason from the golden file, then the edited second Mac's.
+    assert record["rejection_reasons"] == [
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 2750414848},
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": SECOND, "excess_bytes": 1},
+    ]
     assert record["candidate_set_sha256"] == hashlib.sha256(edited).hexdigest()
     assert record["candidate_set_sha256"] != SHA
     jsonschema.validate(record, schema())

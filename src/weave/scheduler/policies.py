@@ -405,13 +405,15 @@ class PolicyChoice:
 
     `plan` is None only for NO_FEASIBLE_PLAN. A choice is not executable and not runtime-verified;
     it is a static pick on an estimate. `reason` is deterministic text, so a later decision record
-    and golden comparison can carry it verbatim.
+    and golden comparison can carry it verbatim. `rejection_reasons` are the reasons the outcome
+    rests on: the chosen plan's own, or for NO_FEASIBLE_PLAN those of every plan that was judged.
     """
 
     policy: str
     outcome: str
     plan: Candidate | None
     reason: str
+    rejection_reasons: tuple[Mapping[str, Any], ...]
 
 
 def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
@@ -427,8 +429,10 @@ def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
     plan that fails the estimate.
     """
     best: Candidate | None = None
+    rejected: list[Mapping[str, Any]] = []
     for device in candidate_set.devices:
         plan = candidate_set.find((device.device_id,), (candidate_set.total_layers,))
+        rejected.extend(plan.rejection_reasons)
         if not plan.memory_feasible:
             continue
         if best is None or plan.headroom_bytes[0] > best.headroom_bytes[0]:
@@ -439,12 +443,13 @@ def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
             NO_FEASIBLE_PLAN,
             None,
             "no single-device plan passes the memory estimate",
+            tuple(rejected),
         )
     reason = (
         f"{best.device_order[0]} alone has the most headroom of the single-device plans "
         f"that pass the memory estimate: {best.headroom_bytes[0]} bytes"
     )
-    return PolicyChoice(BEST_SINGLE_DEVICE, MEMORY_FEASIBLE, best, reason)
+    return PolicyChoice(BEST_SINGLE_DEVICE, MEMORY_FEASIBLE, best, reason, best.rejection_reasons)
 
 
 def _require_one_layer_each(layers: int, devices: int) -> None:
@@ -463,10 +468,10 @@ def _split_choice(policy: str, description: str, plan: Candidate) -> PolicyChoic
     """
     if plan.memory_feasible:
         reason = f"{description} passes the memory estimate"
-        return PolicyChoice(policy, MEMORY_FEASIBLE, plan, reason)
+        return PolicyChoice(policy, MEMORY_FEASIBLE, plan, reason, plan.rejection_reasons)
     failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
     reason = f"{description} fails the memory estimate on {failing}"
-    return PolicyChoice(policy, MEMORY_INFEASIBLE, plan, reason)
+    return PolicyChoice(policy, MEMORY_INFEASIBLE, plan, reason, plan.rejection_reasons)
 
 
 def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
@@ -494,7 +499,7 @@ def _too_few_layers(policy: str, label: str, candidate_set: CandidateSet) -> Pol
     if layers >= devices:
         return None
     reason = f"no {label}: {layers} layers cannot give each of {devices} Macs at least one"
-    return PolicyChoice(policy, NO_FEASIBLE_PLAN, None, reason)
+    return PolicyChoice(policy, NO_FEASIBLE_PLAN, None, reason, ())
 
 
 def equal_split(candidate_set: CandidateSet) -> PolicyChoice:
@@ -597,10 +602,10 @@ def decision_record(
     "selected" field and stays null. candidate_set_sha256 ties the decision to the exact candidate
     file it was made from. The safety flags are fixed (guide section 8): a static choice on an
     estimate is simulated, not executable and not runtime-verified. chosen_plan_id is None exactly
-    when the outcome is NO_FEASIBLE_PLAN, and the rejection reasons are copies of the plan's own.
+    when the outcome is NO_FEASIBLE_PLAN, and the rejection reasons are copies of the choice's own.
     """
     plan = choice.plan
-    reasons = [copy.deepcopy(dict(r)) for r in plan.rejection_reasons] if plan is not None else []
+    reasons = [copy.deepcopy(dict(r)) for r in choice.rejection_reasons]
     return {
         "schema_version": VERSION,
         "simulation": True,

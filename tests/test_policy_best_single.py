@@ -66,6 +66,7 @@ def test_fixture_picks_the_second_mac_alone():
     assert choice.plan.plan_id == _golden()["candidates"][1]["plan_id"]
     assert choice.plan.headroom_bytes == (SECOND_HEADROOM,)
     assert choice.reason == _reason(SECOND, SECOND_HEADROOM)
+    assert choice.rejection_reasons == ()
 
 
 def test_no_mac_fits_alone_reports_no_feasible_plan():
@@ -81,6 +82,12 @@ def test_no_mac_fits_alone_reports_no_feasible_plan():
     assert choice.outcome == "NO_FEASIBLE_PLAN"
     assert choice.plan is None
     assert choice.reason == "no single-device plan passes the memory estimate"
+    # Every single-device plan's reasons, in device order: the pressure Mac's from the fixture,
+    # then the second Mac's from the edit above.
+    assert [dict(r) for r in choice.rejection_reasons] == [
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 2750414848},
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": SECOND, "excess_bytes": 1},
+    ]
 
 
 def test_both_fit_and_the_earlier_mac_has_more_headroom():
