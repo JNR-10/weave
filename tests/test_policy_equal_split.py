@@ -123,15 +123,17 @@ def test_counts_rule_refuses_bad_arguments(total, count, message):
         equal_split_counts(total, count)
 
 
-def test_a_model_with_fewer_layers_than_macs_is_refused():
+def test_a_model_with_fewer_layers_than_macs_has_no_equal_split():
     raw = candidate_set()
     raw["candidates"] = raw["candidates"][:2]
     for candidate in raw["candidates"]:
         candidate["logical_split"] = [1]
         candidate["assignments"][0]["layer_count"] = 1
     candidates = read_candidate_set(raw)
-    with pytest.raises(ValueError, match="cannot give each of 2 Macs at least one"):
-        equal_split(candidates)
+    choice = equal_split(candidates)
+    assert choice.outcome == "NO_FEASIBLE_PLAN"
+    assert choice.plan is None
+    assert choice.reason == "no equal split: 1 layers cannot give each of 2 Macs at least one"
 
 
 def test_a_missing_equal_split_plan_is_refused_not_replaced():

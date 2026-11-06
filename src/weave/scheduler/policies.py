@@ -484,14 +484,31 @@ def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
     return tuple(base + 1 if i < extra else base for i in range(devices))
 
 
+def _too_few_layers(policy: str, label: str, candidate_set: CandidateSet) -> PolicyChoice | None:
+    """NO_FEASIBLE_PLAN when the model has fewer layers than Macs, else None.
+
+    No split gives every Mac a layer, so the generator emits only single-device plans and there
+    is no split plan to find. `label` names the split in the reason ("equal split").
+    """
+    layers, devices = candidate_set.total_layers, len(candidate_set.devices)
+    if layers >= devices:
+        return None
+    reason = f"no {label}: {layers} layers cannot give each of {devices} Macs at least one"
+    return PolicyChoice(policy, NO_FEASIBLE_PLAN, None, reason)
+
+
 def equal_split(candidate_set: CandidateSet) -> PolicyChoice:
     """The weakest common baseline: the same number of layers on every Mac.
 
     Guide section 14 and the README evaluation ladder start at the equal split. It spreads the
     layers over every Mac in device order, with one fixed order and no search. It reports the plan
     even when it fails the memory estimate: a baseline that does not fit is a result to count, and
-    it is never replaced by a fallback plan.
+    it is never replaced by a fallback plan. A model with fewer layers than Macs has no equal
+    split, so the outcome is NO_FEASIBLE_PLAN with no plan.
     """
+    too_few = _too_few_layers(EQUAL_SPLIT, "equal split", candidate_set)
+    if too_few is not None:
+        return too_few
     order = candidate_set.device_ids
     counts = equal_split_counts(candidate_set.total_layers, len(order))
     plan = candidate_set.find(order, counts)
@@ -547,8 +564,13 @@ def memory_proportional(candidate_set: CandidateSet) -> PolicyChoice:
     layers is its safe process budget minus the bytes every stage pays regardless of layers
     (Device.fixed_stage_bytes), floored at zero. Proportion is by layer count, which matches bytes
     only while layers weigh the same. It reports the plan even when it fails the memory estimate:
-    a baseline that does not fit is a result to count, and it is never replaced by a fallback.
+    a baseline that does not fit is a result to count, and it is never replaced by a fallback. A
+    model with fewer layers than Macs has no such split, so the outcome is NO_FEASIBLE_PLAN with
+    no plan.
     """
+    too_few = _too_few_layers(MEMORY_PROPORTIONAL, "memory-proportional split", candidate_set)
+    if too_few is not None:
+        return too_few
     order = candidate_set.device_ids
     rooms = tuple(device.room_for_layers_bytes for device in candidate_set.devices)
     counts = memory_proportional_counts(candidate_set.total_layers, rooms)
