@@ -1,8 +1,8 @@
 # Spec 0002: Static placement policies over the candidate set
 
-- **Status:** in review (pull request #1). Plan steps 1–9 are done. Jainil's review approved the
+- **Status:** in review (pull request #1). Plan steps 1–17 are done. Jainil's review approved the
   decision record (version, schema folder and `chosen_plan_id`) and requested the fixes in steps
-  10–17, which are in progress; step 17 waits for pull request #2
+  10–17; step 17 followed the merge of pull request #2. Waiting for re-review
 - **Owner:** Urmi
 - **Branch:** `feat/urmi-scheduler-placement-policies`, merged into `main` through a pull request
   reviewed by Jainil and Mohit
@@ -97,10 +97,10 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   costs every stage pays regardless of layers (replicated weights, workspace reserve, safety
   margin), floored at zero. Layers are shared in proportion to that room by largest remainder: each
   Mac gets the floor of its quota, and the leftover layers go to the largest fractional parts, ties
-  to the earlier Mac. Every Mac gets at least one layer, taken from the Mac with the most layers (the
-  earliest such Mac on a tie); if
-  every Mac has zero room the quotas are equal. Proportion is by layer count, which matches bytes
-  only while layers weigh the same; the fixture's layers do, and measured profiles are out of scope.
+  to the earlier Mac. Every Mac gets at least one layer, taken from the Mac with the most layers
+  (the earliest such Mac on a tie); if every Mac has zero room the quotas are equal. Proportion is
+  by layer count, which matches bytes only while layers weigh the same; the fixture's layers do, and
+  measured profiles are out of scope.
 - **Fewer layers than Macs:** no split can give every Mac a layer, so the generator emits only the
   single-device plans. Equal and memory-proportional then report `NO_FEASIBLE_PLAN` with a reason
   that says so, instead of raising, and `--compare` keeps every other policy's row.
@@ -145,8 +145,8 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   per layer; fixed costs 2,147,483,648 bytes per stage):
   - Best single Mac: `SIMULATED-second-mac` alone, headroom 19,798,163,456 bytes. The pressure Mac
     alone fails by 2,750,414,848 bytes.
-  - Equal split: `[14, 14]` with the pressure Mac first, `MEMORY_INFEASIBLE`; the pressure Mac exceeds its
-    budget by 838,336,512 bytes. This is the case that motivates the project.
+  - Equal split: `[14, 14]` with the pressure Mac first, `MEMORY_INFEASIBLE`; the pressure Mac
+    exceeds its budget by 838,336,512 bytes. This is the case that motivates the project.
   - Memory-proportional: room 1,073,741,824 and 23,622,320,128 bytes (1 : 22), quotas 1.217 and
     26.783, so `[1, 27]` with the pressure Mac first, `MEMORY_FEASIBLE`; headroom 937,164,800 and
     19,934,740,480 bytes.
@@ -184,9 +184,10 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   (step 7).
 - Three or more Macs: the first version hand-built a three-Mac set from golden pieces, because
   policy tests could not import the planner modules; its headrooms were copied, not real. Pull
-  request #2 lets `test_policy_*` files use the generator, so step 17 builds the set with the real
+  request #2 let `test_policy_*` files use the generator, so step 17 builds the set with the real
   generator (the fixture plus a copy of the second Mac, the device limit raised to 3 in the test
-  only).
+  only). The choices did not change; the bytes are now real: the equal split `[10, 9, 9]` exceeds
+  the pressure Mac's budget by 292,028,416 bytes.
 - Step 8's two-axis review (standards and spec) led to these fixes: the spec's status and decision
   wording were brought up to date; a rejection reason without `device_id` is refused at the read
   instead of failing later with a `KeyError`; rejection reasons became read-only; non-JSON input
@@ -207,13 +208,14 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
 
 ## Plan
 
-Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–9
+Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–17
 are done; steps 10–17 answer the pull request review.
 
 1. **Spec:** add this spec.
 2. **Input reading:** typed candidate-set records and the invalid-input table.
 3. **Best single Mac:** the policy, its tie and no-fit rules.
-4. **Equal split:** the policy and its rounding rule; the fixture's `[14, 14]` is `MEMORY_INFEASIBLE`.
+4. **Equal split:** the policy and its rounding rule; the fixture's `[14, 14]` is
+   `MEMORY_INFEASIBLE`.
 5. **Memory-proportional:** the policy and its rounding rules; the fixture gives `[1, 27]`.
 6. **Decision record:** the schema in its own folder, the record and the `--policy` command; the
    team confirms the format in the pull request.
@@ -224,8 +226,9 @@ are done; steps 10–17 answer the pull request review.
 11. **Outcome names and wording:** rename `FEASIBLE` / `INFEASIBLE` to `MEMORY_FEASIBLE` /
     `MEMORY_INFEASIBLE` in the code, schema, golden table and tests; best single Mac's reason says
     "passes the memory estimate" like the other two.
-12. **Fewer layers than Macs:** equal and memory-proportional report `NO_FEASIBLE_PLAN` with a reason
-    instead of raising; `--compare` keeps the best-single-Mac row. Tested with a one-layer set.
+12. **Fewer layers than Macs:** equal and memory-proportional report `NO_FEASIBLE_PLAN` with a
+    reason instead of raising; `--compare` keeps the best-single-Mac row. Tested with a one-layer
+    set.
 13. **Reasons for `NO_FEASIBLE_PLAN`:** best single Mac's record carries every single-device plan's
     rejection reasons.
 14. **Checked record:** `--policy` validates the record against the committed schema before it
@@ -235,5 +238,5 @@ are done; steps 10–17 answer the pull request review.
 16. **Tests:** a shared `tests/conftest.py` for the golden loader and the "make a Mac not fit" edit;
     a full expected record for every policy; command tests compared with literal expected records,
     not with `decide()`; the schema test compares exact bytes.
-17. **Three Macs from the generator** (after pull request #2 merges and `main` is merged into this
-    branch): build the three-Mac set with the real generator and lock the real bytes.
+17. **Three Macs from the generator** (after pull request #2 merged and `main` was merged into
+    this branch): build the three-Mac set with the real generator and lock the real bytes.

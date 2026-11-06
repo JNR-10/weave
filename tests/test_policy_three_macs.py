@@ -1,28 +1,23 @@
 """Spec 0002: the three policies on a cluster of three Macs, which the golden file does not have.
 
-The golden candidate file has two Macs. Policy tests may not import the planner, so this file
-hand-builds a minimal three-Mac candidate set from golden pieces instead of generating one. The
-reader needs only each Mac's single-device plan plus the plans a policy looks up, so the set holds
-three single-device plans and two three-stage plans: the equal split and the
-memory-proportional split.
-
-The third Mac is a copy of the second, so both state the same budget and the reader's check that
-a Mac has one budget passes. Byte figures other than the headrooms are copied, not recomputed;
-the policies read only the layer counts, the headrooms, the verdicts and the budgets.
+The golden candidate file has two Macs, so this file generates a three-Mac set with the real
+generator: the committed simulated cluster state plus a copy of the second Mac, with the Phase 1
+device limit raised to 3 for the test only. Every byte value is the generator's own.
 
 The room for layers is the budget minus 2147483648 fixed bytes: 1073741824 on the pressure Mac
-and 23622320128 on each of the others, 48318382080 in all. For 28 layers the floors are 0, 13 and
-13, so 2 layers are left over. The two larger remainders belong to the second and third Macs,
-which gives [0, 14, 14]. The pressure Mac cannot run zero layers, so it takes one from the
-earliest Mac with the most, giving [1, 13, 14]. The equal split of 28 layers over three Macs is
-[10, 9, 9].
+and 23622320128 on each of the others. For 28 layers the floors are [0, 13, 13], so 2 layers are
+left over. The two larger remainders belong to the second and third Macs, which gives
+[0, 14, 14]. The pressure Mac cannot run zero layers, so it takes one from the earliest Mac with
+the most, giving [1, 13, 14]. The equal split of 28 layers over three Macs is [10, 9, 9]; its 10
+layers on the pressure Mac exceed that Mac's budget by 292,028,416 bytes.
 """
 
-import copy
-import functools
 import json
 from pathlib import Path
 
+import pytest
+
+from weave.scheduler import candidates
 from weave.scheduler.policies import (
     best_single_device,
     compare,
@@ -32,7 +27,7 @@ from weave.scheduler.policies import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
+STATE = ROOT / "experiments/phase1/cluster-state-SIMULATED.json"
 
 PRESSURE = "SIMULATED-m4-pressure"
 SECOND = "SIMULATED-second-mac"
@@ -42,109 +37,79 @@ SECOND_HEADROOM = 19798163456
 SEPARATOR = "| --- | --- | --- | --- | --- | --- |"
 
 
-@functools.cache
-def _golden():
-    return json.loads(GOLDEN.read_text())
+@pytest.fixture
+def three_mac_set(monkeypatch):
+    """The generator's candidate set for the simulated state plus a copy of the second Mac."""
+    state = json.loads(STATE.read_text())
+    state["devices"].append({**state["devices"][1], "device_id": THIRD})
+    monkeypatch.setattr(candidates, "PHASE1_MAX_DEVICES", 3)
+    return candidates.generate(state)
 
 
-def _pipeline(base, plan_id, split, feasible):
-    """A three-stage plan on (pressure, second, third) built from the golden two-stage plan."""
-    plan = copy.deepcopy(base)
-    pressure_stage, second_stage = plan["assignments"]
-    assert pressure_stage["device_id"] == PRESSURE
-    assert second_stage["device_id"] == SECOND
-    templates = [pressure_stage, second_stage, second_stage]
-    assignments = []
-    start = 0
-    for stage, count in enumerate(split):
-        assignment = copy.deepcopy(templates[stage])
-        assignment.update(
-            device_id=ORDER[stage],
-            logical_stage=stage,
-            mlx_rank=len(ORDER) - 1 - stage,
-            start_layer=start,
-            end_layer_exclusive=start + count,
-            layer_count=count,
-        )
-        assignments.append(assignment)
-        start += count
-    reasons = []
-    if not feasible:
-        assignments[0]["headroom_bytes"] = -1
-        reasons = [{"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 1}]
-    plan.update(
-        plan_id=plan_id,
-        mode="pipeline",
-        logical_split=list(split),
-        mlx_split_by_rank=list(reversed(split)),
-        device_id_by_mlx_rank=list(reversed(ORDER)),
-        assignments=assignments,
-        memory_feasible=feasible,
-        rejection_reasons=reasons,
-    )
-    return plan
-
-
-def three_mac_set():
-    """A fresh three-Mac candidate set: three single-device plans and two three-stage plans."""
-    raw = copy.deepcopy(_golden())
-    pressure_alone, second_alone, two_stage = raw["candidates"][:3]
-    assert pressure_alone["assignments"][0]["device_id"] == PRESSURE
-    assert second_alone["assignments"][0]["device_id"] == SECOND
-    third_alone = copy.deepcopy(second_alone)
-    third_alone["plan_id"] = "candidate-third-alone"
-    third_alone["assignments"][0]["device_id"] = THIRD
-    third_alone["device_id_by_mlx_rank"] = [THIRD]
-    raw["candidates"] = [
-        pressure_alone,
-        second_alone,
-        third_alone,
-        _pipeline(two_stage, "candidate-three-10-9-9", (10, 9, 9), feasible=False),
-        _pipeline(two_stage, "candidate-three-1-13-14", (1, 13, 14), feasible=True),
+def find_plan(raw, order, split):
+    """The generator's plan for this device order and logical split."""
+    matches = [
+        plan
+        for plan in raw["candidates"]
+        if [a["device_id"] for a in plan["assignments"]] == order and plan["logical_split"] == split
     ]
-    raw["candidate_count"] = len(raw["candidates"])
-    raw["memory_feasible_count"] = 3
-    return raw
+    assert len(matches) == 1
+    return matches[0]
 
 
-def test_the_reader_sees_three_macs_in_the_order_of_the_single_device_plans():
-    candidates = read_candidate_set(three_mac_set())
-    assert candidates.device_ids == tuple(ORDER)
-    assert candidates.total_layers == 28
-    assert len(candidates.candidates) == 5
-    rooms = [device.room_for_layers_bytes for device in candidates.devices]
+def plan_id(raw, order, split):
+    """The generator's plan_id for this device order and logical split."""
+    return find_plan(raw, order, split)["plan_id"]
+
+
+def test_the_reader_sees_three_macs_in_the_order_of_the_single_device_plans(three_mac_set):
+    candidate_set = read_candidate_set(three_mac_set)
+    assert candidate_set.device_ids == tuple(ORDER)
+    assert candidate_set.total_layers == 28
+    # 3 alone + 6 ordered pairs x 27 cuts + 6 orders of all three x C(27, 2).
+    assert len(candidate_set.candidates) == 2271
+    rooms = [device.room_for_layers_bytes for device in candidate_set.devices]
     assert rooms == [1073741824, 23622320128, 23622320128]
 
 
-def test_equal_split_gives_the_extra_layer_to_the_first_mac_and_fails_on_it():
-    choice = equal_split(read_candidate_set(three_mac_set()))
+def test_equal_split_gives_the_extra_layer_to_the_first_mac_and_fails_on_it(three_mac_set):
+    choice = equal_split(read_candidate_set(three_mac_set))
     assert choice.outcome == "MEMORY_INFEASIBLE"
     assert choice.plan is not None
-    assert choice.plan.plan_id == "candidate-three-10-9-9"
+    assert choice.plan.plan_id == plan_id(three_mac_set, ORDER, [10, 9, 9])
     assert choice.plan.device_order == tuple(ORDER)
     assert choice.plan.logical_split == (10, 9, 9)
+    assert choice.plan.headroom_bytes == (-292028416, 22393126912, 22393126912)
     assert choice.reason == (
         f"equal split [10, 9, 9] on {ORDER} fails the memory estimate on {PRESSURE}"
     )
+    assert [dict(r) for r in choice.rejection_reasons] == [
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 292028416}
+    ]
 
 
-def test_memory_proportional_follows_the_room_and_keeps_every_stage_non_empty():
-    choice = memory_proportional(read_candidate_set(three_mac_set()))
+def test_memory_proportional_follows_the_room_and_keeps_every_stage_non_empty(three_mac_set):
+    choice = memory_proportional(read_candidate_set(three_mac_set))
     assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
-    assert choice.plan.plan_id == "candidate-three-1-13-14"
+    assert choice.plan.plan_id == plan_id(three_mac_set, ORDER, [1, 13, 14])
     assert choice.plan.device_order == tuple(ORDER)
     assert choice.plan.logical_split == (1, 13, 14)
+    assert choice.plan.headroom_bytes == (937164800, 21846818816, 21710241792)
     assert choice.reason == (
         f"memory-proportional split [1, 13, 14] on {ORDER} "
         "from room [1073741824, 23622320128, 23622320128] bytes passes the memory estimate"
     )
 
 
-def test_best_single_device_breaks_a_tie_toward_the_earlier_mac():
-    choice = best_single_device(read_candidate_set(three_mac_set()))
+def test_best_single_device_breaks_a_tie_toward_the_earlier_mac(three_mac_set):
+    third_alone = find_plan(three_mac_set, [THIRD], [28])
+    assert third_alone["assignments"][0]["headroom_bytes"] == SECOND_HEADROOM
+
+    choice = best_single_device(read_candidate_set(three_mac_set))
     assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
+    assert choice.plan.plan_id == plan_id(three_mac_set, [SECOND], [28])
     assert choice.plan.device_order == (SECOND,)
     assert choice.plan.headroom_bytes == (SECOND_HEADROOM,)
     assert choice.reason == (
@@ -153,18 +118,20 @@ def test_best_single_device_breaks_a_tie_toward_the_earlier_mac():
     )
 
 
-def test_compare_has_one_row_per_policy_on_three_macs():
-    lines = compare(json.dumps(three_mac_set()).encode()).splitlines()
+def test_compare_has_one_row_per_policy_on_three_macs(three_mac_set):
+    lines = compare(json.dumps(three_mac_set).encode()).splitlines()
     rows = lines[lines.index(SEPARATOR) + 1 :]
     order_cell = ", ".join(ORDER)
-    equal_tail = f"| [10, 9, 9] | {order_cell} | -1, 19934740480, 19934740480 |"
-    proportional_tail = f"| [1, 13, 14] | {order_cell} | 937164800, 19934740480, 19934740480 |"
+    equal_id = plan_id(three_mac_set, ORDER, [10, 9, 9])
+    proportional_id = plan_id(three_mac_set, ORDER, [1, 13, 14])
     assert len(rows) == 3
     assert rows[0].startswith("| best_single_device | MEMORY_FEASIBLE | ")
     assert rows[0].endswith(f"| [28] | {SECOND} | {SECOND_HEADROOM} |")
-    assert rows[1].startswith("| equal_split | MEMORY_INFEASIBLE | candidate-three-10-9-9 | ")
-    assert rows[1].endswith(equal_tail)
-    assert rows[2].startswith(
-        "| memory_proportional | MEMORY_FEASIBLE | candidate-three-1-13-14 | "
+    assert rows[1] == (
+        f"| equal_split | MEMORY_INFEASIBLE | {equal_id} | [10, 9, 9] | {order_cell} "
+        "| -292028416, 22393126912, 22393126912 |"
     )
-    assert rows[2].endswith(proportional_tail)
+    assert rows[2] == (
+        f"| memory_proportional | MEMORY_FEASIBLE | {proportional_id} | [1, 13, 14] "
+        f"| {order_cell} | 937164800, 21846818816, 21710241792 |"
+    )
