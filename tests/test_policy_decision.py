@@ -1,0 +1,286 @@
+"""Step 6 of spec 0002: the decision record, its schema and the --policy command.
+
+The candidate set is read from the golden candidate file rather than generated here: policies
+consume the generator's output file, and tests/test_phase1_golden.py already holds the generator to
+that file byte for byte. It also keeps these tests out of the planner's checkpoint evidence, which
+covers every test file that uses the planner modules.
+
+A decision record names the candidate file it was made from by the SHA-256 of that file's bytes, so
+the tests hash the golden file the same way. In the golden file, the plan with logical_split
+[14, 14] and the pressure Mac first is the equal split of 28 layers over two Macs, and it fails the
+pressure Mac's budget. The record is checked against the committed schema in
+experiments/policies/schemas/v2/, not against the generator's output.
+"""
+
+import copy
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+import jsonschema
+import pytest
+
+from weave.scheduler import policies
+
+ROOT = Path(__file__).resolve().parents[1]
+GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
+SCHEMA = ROOT / "experiments/policies/schemas/v2/placement_decision.schema.json"
+SHA = hashlib.sha256(GOLDEN.read_bytes()).hexdigest()
+
+PRESSURE = "SIMULATED-m4-pressure"
+SECOND = "SIMULATED-second-mac"
+
+FIELD_ORDER = [
+    "schema_version",
+    "simulation",
+    "policy",
+    "source_snapshot_id",
+    "candidate_set_sha256",
+    "chosen_plan_id",
+    "outcome",
+    "reason",
+    "rejection_reasons",
+    "executable",
+    "runtime_verified",
+]
+
+# The full record of every policy on the golden file, written out by hand in field order. The
+# values come from the golden file and tests/golden/policy-comparison.md, not from decide().
+EXPECTED_RECORDS = {
+    "best_single_device": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "best_single_device",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-7cb504ce3de7854e",
+        "outcome": "MEMORY_FEASIBLE",
+        "reason": (
+            "SIMULATED-second-mac alone has the most headroom of the single-device plans "
+            "that pass the memory estimate: 19798163456 bytes"
+        ),
+        "rejection_reasons": [],
+        "executable": False,
+        "runtime_verified": False,
+    },
+    "equal_split": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "equal_split",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-f52712c34dc8ad3a",
+        "outcome": "MEMORY_INFEASIBLE",
+        "reason": (
+            "equal split [14, 14] on ['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
+            "fails the memory estimate on SIMULATED-m4-pressure"
+        ),
+        "rejection_reasons": [
+            {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 838336512},
+        ],
+        "executable": False,
+        "runtime_verified": False,
+    },
+    "memory_proportional": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "memory_proportional",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-bfa599b48584765b",
+        "outcome": "MEMORY_FEASIBLE",
+        "reason": (
+            "memory-proportional split [1, 27] on "
+            "['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
+            "from room [1073741824, 23622320128] bytes passes the memory estimate"
+        ),
+        "rejection_reasons": [],
+        "executable": False,
+        "runtime_verified": False,
+    },
+}
+
+
+def run_command(monkeypatch, *argv):
+    monkeypatch.setattr(sys, "argv", [policies.__name__, *argv])
+    policies.main()
+
+
+def schema():
+    return json.loads(SCHEMA.read_text())
+
+
+def even_split_plan(raw, first_device):
+    """The raw [14, 14] candidate whose stage 0 runs on first_device."""
+    for candidate in raw["candidates"]:
+        if candidate["logical_split"] == [14, 14]:
+            if candidate["assignments"][0]["device_id"] == first_device:
+                return candidate
+    raise AssertionError(f"no [14, 14] candidate starts on {first_device}")
+
+
+def equal_split_record():
+    return policies.decide(GOLDEN.read_bytes(), "equal_split")
+
+
+@pytest.mark.parametrize("name", ["best_single_device", "equal_split", "memory_proportional"])
+def test_every_policy_gives_a_record_that_validates(name):
+    record = policies.decide(GOLDEN.read_bytes(), name)
+    jsonschema.validate(record, schema())
+    assert record["policy"] == name
+    assert record["candidate_set_sha256"] == SHA
+    assert record["simulation"] is True
+    assert record["executable"] is False
+    assert record["runtime_verified"] is False
+
+
+@pytest.mark.parametrize("name", ["best_single_device", "equal_split", "memory_proportional"])
+def test_record_on_the_golden_file_is_exact(name):
+    record = policies.decide(GOLDEN.read_bytes(), name)
+    assert list(record) == FIELD_ORDER
+    assert record == EXPECTED_RECORDS[name]
+
+
+def test_the_equal_split_record_chooses_the_even_split_with_the_pressure_mac_first(golden_set):
+    chosen = even_split_plan(golden_set, PRESSURE)["plan_id"]
+    assert EXPECTED_RECORDS["equal_split"]["chosen_plan_id"] == chosen
+
+
+def test_no_feasible_plan_record_names_every_failing_mac(golden_set, make_unfit):
+    second_alone = golden_set["candidates"][1]
+    assert second_alone["assignments"][0]["device_id"] == SECOND
+    assert len(second_alone["logical_split"]) == 1
+    make_unfit(second_alone)
+    edited = json.dumps(golden_set).encode()
+
+    record = policies.decide(edited, "best_single_device")
+
+    assert record["chosen_plan_id"] is None
+    assert record["outcome"] == "NO_FEASIBLE_PLAN"
+    # Device order: the pressure Mac's reason from the golden file, then the edited second Mac's.
+    assert record["rejection_reasons"] == [
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 2750414848},
+        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": SECOND, "excess_bytes": 1},
+    ]
+    assert record["candidate_set_sha256"] == hashlib.sha256(edited).hexdigest()
+    assert record["candidate_set_sha256"] != SHA
+    jsonschema.validate(record, schema())
+
+
+def test_unknown_policy_is_refused():
+    with pytest.raises(ValueError, match="policy: expected one of"):
+        policies.decide(GOLDEN.read_bytes(), "adaptive")
+
+
+def test_a_file_that_is_not_json_is_refused_as_a_value_error():
+    with pytest.raises(ValueError, match="candidate file: not valid JSON"):
+        policies.decide(b"not json", "equal_split")
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        pytest.param({"executable": True}, id="executable"),
+        pytest.param({"runtime_verified": True}, id="runtime_verified"),
+        pytest.param({"simulation": False}, id="not_simulated"),
+        pytest.param({"selected_plan_id": None}, id="extra_field"),
+        pytest.param({"chosen_plan_id": None}, id="infeasible_without_plan"),
+        pytest.param({"outcome": "NO_FEASIBLE_PLAN"}, id="no_feasible_plan_with_plan"),
+        pytest.param({"candidate_set_sha256": "abc"}, id="short_hash"),
+        pytest.param({"policy": "adaptive"}, id="unknown_policy"),
+        pytest.param({"schema_version": "1.0.0"}, id="old_version"),
+    ],
+)
+def test_schema_refuses_a_broken_record(changes):
+    record = equal_split_record()
+    jsonschema.validate(record, schema())
+    broken = {**copy.deepcopy(record), **changes}
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(broken, schema())
+
+
+def test_command_writes_the_record_without_a_trailing_newline(tmp_path, monkeypatch):
+    out = tmp_path / "decision.json"
+    run_command(
+        monkeypatch,
+        "--candidates",
+        str(GOLDEN),
+        "--policy",
+        "memory_proportional",
+        "--output",
+        str(out),
+    )
+    expected = EXPECTED_RECORDS["memory_proportional"]
+    assert json.loads(out.read_text()) == expected
+    assert out.read_text() == json.dumps(expected, indent=2)
+
+
+def test_command_refuses_to_overwrite(tmp_path, monkeypatch):
+    out = tmp_path / "decision.json"
+    out.write_text("keep")
+    with pytest.raises(FileExistsError):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "equal_split",
+            "--output",
+            str(out),
+        )
+    assert out.read_text() == "keep"
+
+
+def test_the_command_refuses_a_record_that_fails_the_schema(tmp_path, monkeypatch):
+    out = tmp_path / "d.json"
+    real = equal_split_record()
+    monkeypatch.setattr(policies, "decide", lambda candidate_bytes, policy: {**real, "extra": 1})
+    with pytest.raises(ValueError, match=r"^decision record: fails placement_decision.schema.json"):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "equal_split",
+            "--output",
+            str(out),
+        )
+    assert not out.exists()
+
+
+def test_the_command_refuses_without_jsonschema(tmp_path, monkeypatch):
+    out = tmp_path / "d.json"
+    # A None entry in sys.modules makes `import jsonschema` raise ImportError.
+    monkeypatch.setitem(sys.modules, "jsonschema", None)
+    with pytest.raises(ValueError, match="jsonschema is not installed"):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "equal_split",
+            "--output",
+            str(out),
+        )
+    assert not out.exists()
+
+
+@pytest.mark.parametrize("name", ["best_single_device", "equal_split", "memory_proportional"])
+def test_check_decision_record_accepts_every_policy_record(name):
+    policies.check_decision_record(policies.decide(GOLDEN.read_bytes(), name))
+
+
+def test_command_refuses_an_unknown_policy(tmp_path, monkeypatch):
+    out = tmp_path / "decision.json"
+    with pytest.raises(SystemExit):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "adaptive",
+            "--output",
+            str(out),
+        )
+    assert not out.exists()
