@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from weave.scheduler.candidates import VERSION
+from weave.telemetry.baseline import source_checkout
+
+DECISION_SCHEMA = Path("experiments/policies/schemas/v2/placement_decision.schema.json")
 
 # Reading the candidate set. Every error starts with the field's path ("candidates[2].mode: ..."),
 # as in weave.scheduler.candidates. The small helpers are repeated here on purpose: modules do not
@@ -682,11 +685,33 @@ def compare(candidate_bytes: bytes) -> str:
     return "\n".join(lines)
 
 
+def check_decision_record(record: dict[str, Any]) -> None:
+    """Refuse a decision record that fails the committed placement_decision schema.
+
+    The committed schema bytes are the contract, as in the checkpoint command, so they are what
+    is checked, not a schema built from code. A missing validator or schema file is a refusal,
+    never a skip.
+    """
+    try:
+        import jsonschema
+    except ImportError:
+        raise ValueError("decision record: jsonschema is not installed; run make setup") from None
+    repo = source_checkout()
+    schema_path = repo / DECISION_SCHEMA if repo else None
+    if schema_path is None or not schema_path.is_file():
+        raise ValueError(f"decision record: committed schema {DECISION_SCHEMA} not found")
+    try:
+        jsonschema.validate(record, json.loads(schema_path.read_bytes()))
+    except jsonschema.ValidationError as exc:
+        raise ValueError(f"decision record: fails {DECISION_SCHEMA.name}: {exc.message}") from exc
+
+
 def main() -> None:
     """Write one decision record (--policy), or print every policy's choice (--compare).
 
-    The record mode, like the candidate command, never overwrites a file. The compare mode writes
-    no file, so it takes neither --policy nor --output.
+    The record mode, like the candidate command, never overwrites a file, and it checks the record
+    against the committed schema before opening the output, so a refused record writes nothing.
+    The compare mode writes no file, so it takes neither --policy nor --output.
     """
     p = argparse.ArgumentParser()
     p.add_argument("--candidates", required=True)
@@ -706,6 +731,7 @@ def main() -> None:
     if args.policy is None or args.output is None:
         p.error("--policy and --output are required unless --compare is given")
     record = decide(Path(args.candidates).read_bytes(), args.policy)
+    check_decision_record(record)
     with Path(args.output).open("x") as f:
         json.dump(record, f, indent=2)
     print(json.dumps(record, indent=2))

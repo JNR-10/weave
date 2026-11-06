@@ -199,6 +199,45 @@ def test_command_refuses_to_overwrite(tmp_path, monkeypatch):
     assert out.read_text() == "keep"
 
 
+def test_the_command_refuses_a_record_that_fails_the_schema(tmp_path, monkeypatch):
+    out = tmp_path / "d.json"
+    real = equal_split_record()
+    monkeypatch.setattr(policies, "decide", lambda candidate_bytes, policy: {**real, "extra": 1})
+    with pytest.raises(ValueError, match=r"^decision record: fails placement_decision.schema.json"):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "equal_split",
+            "--output",
+            str(out),
+        )
+    assert not out.exists()
+
+
+def test_the_command_refuses_without_jsonschema(tmp_path, monkeypatch):
+    out = tmp_path / "d.json"
+    # A None entry in sys.modules makes `import jsonschema` raise ImportError.
+    monkeypatch.setitem(sys.modules, "jsonschema", None)
+    with pytest.raises(ValueError, match="jsonschema is not installed"):
+        run_command(
+            monkeypatch,
+            "--candidates",
+            str(GOLDEN),
+            "--policy",
+            "equal_split",
+            "--output",
+            str(out),
+        )
+    assert not out.exists()
+
+
+@pytest.mark.parametrize("name", ["best_single_device", "equal_split", "memory_proportional"])
+def test_check_decision_record_accepts_every_policy_record(name):
+    policies.check_decision_record(policies.decide(GOLDEN.read_bytes(), name))
+
+
 def test_command_refuses_an_unknown_policy(tmp_path, monkeypatch):
     out = tmp_path / "decision.json"
     with pytest.raises(SystemExit):
