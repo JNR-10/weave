@@ -118,7 +118,7 @@ def test_the_reader_sees_three_macs_in_the_order_of_the_single_device_plans():
 
 def test_equal_split_gives_the_extra_layer_to_the_first_mac_and_fails_on_it():
     choice = equal_split(read_candidate_set(three_mac_set()))
-    assert choice.outcome == "INFEASIBLE"
+    assert choice.outcome == "MEMORY_INFEASIBLE"
     assert choice.plan is not None
     assert choice.plan.plan_id == "candidate-three-10-9-9"
     assert choice.plan.device_order == tuple(ORDER)
@@ -130,7 +130,7 @@ def test_equal_split_gives_the_extra_layer_to_the_first_mac_and_fails_on_it():
 
 def test_memory_proportional_follows_the_room_and_keeps_every_stage_non_empty():
     choice = memory_proportional(read_candidate_set(three_mac_set()))
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.plan_id == "candidate-three-1-13-14"
     assert choice.plan.device_order == tuple(ORDER)
@@ -143,13 +143,13 @@ def test_memory_proportional_follows_the_room_and_keeps_every_stage_non_empty():
 
 def test_best_single_device_breaks_a_tie_toward_the_earlier_mac():
     choice = best_single_device(read_candidate_set(three_mac_set()))
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (SECOND,)
     assert choice.plan.headroom_bytes == (SECOND_HEADROOM,)
     assert choice.reason == (
-        f"{SECOND} alone has the most headroom of the single-device plans that fit: "
-        f"{SECOND_HEADROOM} bytes"
+        f"{SECOND} alone has the most headroom of the single-device plans that pass the "
+        f"memory estimate: {SECOND_HEADROOM} bytes"
     )
 
 
@@ -160,9 +160,11 @@ def test_compare_has_one_row_per_policy_on_three_macs():
     equal_tail = f"| [10, 9, 9] | {order_cell} | -1, 19934740480, 19934740480 |"
     proportional_tail = f"| [1, 13, 14] | {order_cell} | 937164800, 19934740480, 19934740480 |"
     assert len(rows) == 3
-    assert rows[0].startswith("| best_single_device | FEASIBLE | ")
+    assert rows[0].startswith("| best_single_device | MEMORY_FEASIBLE | ")
     assert rows[0].endswith(f"| [28] | {SECOND} | {SECOND_HEADROOM} |")
-    assert rows[1].startswith("| equal_split | INFEASIBLE | candidate-three-10-9-9 | ")
+    assert rows[1].startswith("| equal_split | MEMORY_INFEASIBLE | candidate-three-10-9-9 | ")
     assert rows[1].endswith(equal_tail)
-    assert rows[2].startswith("| memory_proportional | FEASIBLE | candidate-three-1-13-14 | ")
+    assert rows[2].startswith(
+        "| memory_proportional | MEMORY_FEASIBLE | candidate-three-1-13-14 | "
+    )
     assert rows[2].endswith(proportional_tail)

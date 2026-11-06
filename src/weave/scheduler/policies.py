@@ -390,8 +390,8 @@ def read_candidate_set(raw: Any) -> CandidateSet:
 # Policies. Each computes the plan it wants, finds it among the candidates and reports the
 # candidate's own memory verdict; none falls back to another plan (spec 0002).
 
-FEASIBLE = "FEASIBLE"
-INFEASIBLE = "INFEASIBLE"
+MEMORY_FEASIBLE = "MEMORY_FEASIBLE"
+MEMORY_INFEASIBLE = "MEMORY_INFEASIBLE"
 NO_FEASIBLE_PLAN = "NO_FEASIBLE_PLAN"
 
 BEST_SINGLE_DEVICE = "best_single_device"
@@ -415,14 +415,16 @@ class PolicyChoice:
 
 
 def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
-    """The "don't distribute" baseline: the single Mac with the most headroom that fits.
+    """The "don't distribute" baseline: the single Mac with the most headroom that passes the
+    memory estimate.
 
     Guide section 14 lists single-node MLX on the best single device as a baseline, so it must
     always exist for distribution to have something to beat. For each Mac in device order this
     looks up its single-device plan, keeps those that pass the memory estimate and picks the one
     with the largest headroom. A tie goes to the earlier Mac, because a later plan replaces the
-    pick only when strictly greater. When no Mac fits alone the outcome is NO_FEASIBLE_PLAN and no
-    plan is chosen: a missing baseline is reported, never replaced by a plan that does not fit.
+    pick only when strictly greater. When no single-device plan passes the estimate the outcome is
+    NO_FEASIBLE_PLAN and no plan is chosen: a missing baseline is reported, never replaced by a
+    plan that fails the estimate.
     """
     best: Candidate | None = None
     for device in candidate_set.devices:
@@ -436,13 +438,13 @@ def best_single_device(candidate_set: CandidateSet) -> PolicyChoice:
             BEST_SINGLE_DEVICE,
             NO_FEASIBLE_PLAN,
             None,
-            "no single-device plan fits its Mac's budget",
+            "no single-device plan passes the memory estimate",
         )
     reason = (
         f"{best.device_order[0]} alone has the most headroom of the single-device plans "
-        f"that fit: {best.headroom_bytes[0]} bytes"
+        f"that pass the memory estimate: {best.headroom_bytes[0]} bytes"
     )
-    return PolicyChoice(BEST_SINGLE_DEVICE, FEASIBLE, best, reason)
+    return PolicyChoice(BEST_SINGLE_DEVICE, MEMORY_FEASIBLE, best, reason)
 
 
 def _require_one_layer_each(layers: int, devices: int) -> None:
@@ -460,10 +462,11 @@ def _split_choice(policy: str, description: str, plan: Candidate) -> PolicyChoic
     the outcome come from one place. The failing Macs are the ones its rejection reasons name.
     """
     if plan.memory_feasible:
-        return PolicyChoice(policy, FEASIBLE, plan, f"{description} passes the memory estimate")
+        reason = f"{description} passes the memory estimate"
+        return PolicyChoice(policy, MEMORY_FEASIBLE, plan, reason)
     failing = ", ".join(r["device_id"] for r in plan.rejection_reasons)
     reason = f"{description} fails the memory estimate on {failing}"
-    return PolicyChoice(policy, INFEASIBLE, plan, reason)
+    return PolicyChoice(policy, MEMORY_INFEASIBLE, plan, reason)
 
 
 def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:

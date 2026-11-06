@@ -73,17 +73,17 @@ def test_comparison_names_the_input_and_each_policys_choice():
     assert not text.endswith("\n")
 
     best = row_for(text, "best_single_device")
-    assert best.startswith("| best_single_device | FEASIBLE | ")
+    assert best.startswith("| best_single_device | MEMORY_FEASIBLE | ")
     assert best.endswith("| [28] | SIMULATED-second-mac | 19798163456 |")
 
     equal = row_for(text, "equal_split")
-    assert equal.startswith("| equal_split | INFEASIBLE | ")
+    assert equal.startswith("| equal_split | MEMORY_INFEASIBLE | ")
     assert equal.endswith(
         "| [14, 14] | SIMULATED-m4-pressure, SIMULATED-second-mac | -838336512, 21710241792 |"
     )
 
     proportional = row_for(text, "memory_proportional")
-    assert proportional.startswith("| memory_proportional | FEASIBLE | ")
+    assert proportional.startswith("| memory_proportional | MEMORY_FEASIBLE | ")
     assert proportional.endswith(
         "| [1, 27] | SIMULATED-m4-pressure, SIMULATED-second-mac | 937164800, 19934740480 |"
     )

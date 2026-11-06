@@ -4,6 +4,6 @@ Simulated: each plan passes or fails a stated memory estimate; none is executabl
 
 | policy | outcome | plan_id | logical split | device order | headroom bytes per stage |
 | --- | --- | --- | --- | --- | --- |
-| best_single_device | FEASIBLE | candidate-7cb504ce3de7854e | [28] | SIMULATED-second-mac | 19798163456 |
-| equal_split | INFEASIBLE | candidate-f52712c34dc8ad3a | [14, 14] | SIMULATED-m4-pressure, SIMULATED-second-mac | -838336512, 21710241792 |
-| memory_proportional | FEASIBLE | candidate-bfa599b48584765b | [1, 27] | SIMULATED-m4-pressure, SIMULATED-second-mac | 937164800, 19934740480 |
+| best_single_device | MEMORY_FEASIBLE | candidate-7cb504ce3de7854e | [28] | SIMULATED-second-mac | 19798163456 |
+| equal_split | MEMORY_INFEASIBLE | candidate-f52712c34dc8ad3a | [14, 14] | SIMULATED-m4-pressure, SIMULATED-second-mac | -838336512, 21710241792 |
+| memory_proportional | MEMORY_FEASIBLE | candidate-bfa599b48584765b | [1, 27] | SIMULATED-m4-pressure, SIMULATED-second-mac | 937164800, 19934740480 |

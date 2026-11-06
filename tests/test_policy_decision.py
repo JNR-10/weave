@@ -99,7 +99,7 @@ def test_equal_split_record_on_the_golden_file_is_exact():
         "source_snapshot_id": raw["source_snapshot_id"],
         "candidate_set_sha256": SHA,
         "chosen_plan_id": even_split_plan(raw, PRESSURE)["plan_id"],
-        "outcome": "INFEASIBLE",
+        "outcome": "MEMORY_INFEASIBLE",
         "reason": EQUAL_SPLIT_REASON,
         "rejection_reasons": [
             {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 838336512},

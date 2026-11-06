@@ -62,7 +62,7 @@ def _choose(raw):
 def test_fixture_equal_split_is_infeasible_on_the_pressure_mac():
     choice = _choose(candidate_set())
     assert choice.policy == "equal_split"
-    assert choice.outcome == "INFEASIBLE"
+    assert choice.outcome == "MEMORY_INFEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE, SECOND)
     assert choice.plan.logical_split == (14, 14)
@@ -82,7 +82,7 @@ def test_an_equal_split_that_fits_is_feasible():
     plan["assignments"][0]["headroom_bytes"] = 1
     choice = _choose(raw)
     assert choice.policy == "equal_split"
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.plan_id == plan["plan_id"]
     assert choice.plan.rejection_reasons == ()

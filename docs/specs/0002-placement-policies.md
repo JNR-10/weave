@@ -145,10 +145,10 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   per layer; fixed costs 2,147,483,648 bytes per stage):
   - Best single Mac: `SIMULATED-second-mac` alone, headroom 19,798,163,456 bytes. The pressure Mac
     alone fails by 2,750,414,848 bytes.
-  - Equal split: `[14, 14]` with the pressure Mac first, `INFEASIBLE`; the pressure Mac exceeds its
+  - Equal split: `[14, 14]` with the pressure Mac first, `MEMORY_INFEASIBLE`; the pressure Mac exceeds its
     budget by 838,336,512 bytes. This is the case that motivates the project.
   - Memory-proportional: room 1,073,741,824 and 23,622,320,128 bytes (1 : 22), quotas 1.217 and
-    26.783, so `[1, 27]` with the pressure Mac first, `FEASIBLE`; headroom 937,164,800 and
+    26.783, so `[1, 27]` with the pressure Mac first, `MEMORY_FEASIBLE`; headroom 937,164,800 and
     19,934,740,480 bytes.
 - **Rule tests:** equal split for several layer and Mac counts; largest-remainder rounding and its
   tie rule; the at-least-one-layer rule; the all-zero-room rule; the best-single tie rule; no single
@@ -213,7 +213,7 @@ are done; steps 10–17 answer the pull request review.
 1. **Spec:** add this spec.
 2. **Input reading:** typed candidate-set records and the invalid-input table.
 3. **Best single Mac:** the policy, its tie and no-fit rules.
-4. **Equal split:** the policy and its rounding rule; the fixture's `[14, 14]` is `INFEASIBLE`.
+4. **Equal split:** the policy and its rounding rule; the fixture's `[14, 14]` is `MEMORY_INFEASIBLE`.
 5. **Memory-proportional:** the policy and its rounding rules; the fixture gives `[1, 27]`.
 6. **Decision record:** the schema in its own folder, the record and the `--policy` command; the
    team confirms the format in the pull request.

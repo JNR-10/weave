@@ -40,8 +40,8 @@ def candidate_set():
 
 def _reason(device_id, headroom):
     return (
-        f"{device_id} alone has the most headroom of the single-device plans that fit: "
-        f"{headroom} bytes"
+        f"{device_id} alone has the most headroom of the single-device plans that pass the "
+        f"memory estimate: {headroom} bytes"
     )
 
 
@@ -60,7 +60,7 @@ def _choose(raw):
 def test_fixture_picks_the_second_mac_alone():
     choice = _choose(candidate_set())
     assert choice.policy == "best_single_device"
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (SECOND,)
     assert choice.plan.plan_id == _golden()["candidates"][1]["plan_id"]
@@ -80,14 +80,14 @@ def test_no_mac_fits_alone_reports_no_feasible_plan():
     assert choice.policy == "best_single_device"
     assert choice.outcome == "NO_FEASIBLE_PLAN"
     assert choice.plan is None
-    assert choice.reason == "no single-device plan fits its Mac's budget"
+    assert choice.reason == "no single-device plan passes the memory estimate"
 
 
 def test_both_fit_and_the_earlier_mac_has_more_headroom():
     raw = candidate_set()
     _make_feasible(raw, 0, SECOND_HEADROOM + 1)
     choice = _choose(raw)
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE,)
     assert choice.reason == _reason(PRESSURE, SECOND_HEADROOM + 1)
@@ -97,7 +97,7 @@ def test_equal_headroom_goes_to_the_earlier_mac():
     raw = candidate_set()
     _make_feasible(raw, 0, SECOND_HEADROOM)
     choice = _choose(raw)
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE,)
     assert choice.reason == _reason(PRESSURE, SECOND_HEADROOM)
@@ -107,7 +107,7 @@ def test_both_fit_and_the_later_mac_has_more_headroom():
     raw = candidate_set()
     _make_feasible(raw, 0, 1)
     choice = _choose(raw)
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (SECOND,)
     assert choice.reason == _reason(SECOND, SECOND_HEADROOM)
@@ -118,7 +118,7 @@ def test_an_infeasible_plan_is_never_chosen_whatever_its_headroom_number():
     # Its rejection reasons stay, so the verdict is still "does not fit".
     raw["candidates"][0]["assignments"][0]["headroom_bytes"] = 10**12
     choice = _choose(raw)
-    assert choice.outcome == "FEASIBLE"
+    assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (SECOND,)
 
@@ -126,4 +126,4 @@ def test_an_infeasible_plan_is_never_chosen_whatever_its_headroom_number():
 def test_the_choice_is_frozen():
     choice = _choose(candidate_set())
     with pytest.raises(dataclasses.FrozenInstanceError):
-        choice.outcome = "INFEASIBLE"
+        choice.outcome = "MEMORY_INFEASIBLE"

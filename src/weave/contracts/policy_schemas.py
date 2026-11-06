@@ -14,8 +14,8 @@ from weave.scheduler.candidates import VERSION
 from weave.scheduler.policies import (
     BEST_SINGLE_DEVICE,
     EQUAL_SPLIT,
-    FEASIBLE,
-    INFEASIBLE,
+    MEMORY_FEASIBLE,
+    MEMORY_INFEASIBLE,
     MEMORY_PROPORTIONAL,
     NO_FEASIBLE_PLAN,
 )
@@ -29,7 +29,7 @@ def build_schemas() -> dict[str, Any]:
         "source_snapshot_id": STRING,
         "candidate_set_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "chosen_plan_id": {"type": ["string", "null"]},
-        "outcome": {"enum": [FEASIBLE, INFEASIBLE, NO_FEASIBLE_PLAN]},
+        "outcome": {"enum": [MEMORY_FEASIBLE, MEMORY_INFEASIBLE, NO_FEASIBLE_PLAN]},
         "reason": STRING,
         "rejection_reasons": {"type": "array", "items": {"type": "object"}},
         "executable": {"const": False},

@@ -31,8 +31,8 @@
     },
     "outcome": {
       "enum": [
-        "FEASIBLE",
-        "INFEASIBLE",
+        "MEMORY_FEASIBLE",
+        "MEMORY_INFEASIBLE",
         "NO_FEASIBLE_PLAN"
       ]
     },
