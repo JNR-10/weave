@@ -12,36 +12,20 @@ covers every test file that uses the planner modules.
 
 import copy
 import dataclasses
-import functools
-import json
 import re
-from pathlib import Path
 
 import pytest
 
 from weave.scheduler.policies import read_candidate_set
-
-ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
 
 PRESSURE = "SIMULATED-m4-pressure"
 SECOND = "SIMULATED-second-mac"
 SECOND_BUDGET = 25769803776
 
 
-@functools.cache
-def _golden():
-    return json.loads(GOLDEN.read_text())
-
-
-def candidate_set():
-    """A fresh copy of the fixture's candidate set, safe to edit."""
-    return copy.deepcopy(_golden())
-
-
-def test_fixture_layout_the_invalid_table_relies_on():
+def test_fixture_layout_the_invalid_table_relies_on(golden_set):
     # The generator emits the single-device plans first, then the pressure-first group from [1, 27].
-    candidates = candidate_set()["candidates"]
+    candidates = golden_set["candidates"]
     assert [c["logical_split"] for c in candidates[:4]] == [[28], [28], [1, 27], [2, 26]]
     assert [a["device_id"] for a in candidates[2]["assignments"]] == [PRESSURE, SECOND]
     assert candidates[0]["assignments"][0]["device_id"] == PRESSURE
@@ -49,11 +33,11 @@ def test_fixture_layout_the_invalid_table_relies_on():
     assert len(candidates) == 56
 
 
-def test_valid_fixture_is_read_into_typed_records():
-    result = read_candidate_set(candidate_set())
+def test_valid_fixture_is_read_into_typed_records(golden_set):
+    result = read_candidate_set(golden_set)
     assert len(result.candidates) == 56
     assert result.total_layers == 28
-    assert result.source_snapshot_id == candidate_set()["source_snapshot_id"]
+    assert result.source_snapshot_id == golden_set["source_snapshot_id"]
     assert tuple(d.device_id for d in result.devices) == (PRESSURE, SECOND)
     pressure, second = result.devices
     assert pressure.safe_process_budget_bytes == 3221225472
@@ -61,8 +45,8 @@ def test_valid_fixture_is_read_into_typed_records():
     assert second.safe_process_budget_bytes == SECOND_BUDGET
 
 
-def test_find_returns_the_candidate_with_its_memory_verdict():
-    result = read_candidate_set(candidate_set())
+def test_find_returns_the_candidate_with_its_memory_verdict(golden_set):
+    result = read_candidate_set(golden_set)
     plan = result.find((PRESSURE, SECOND), (10, 18))
     assert plan.device_order == (PRESSURE, SECOND)
     assert plan.logical_split == (10, 18)
@@ -86,14 +70,16 @@ def test_find_returns_the_candidate_with_its_memory_verdict():
         (("SIMULATED-third",), (28,)),
     ],
 )
-def test_find_refuses_a_split_that_is_not_among_the_candidates(device_order, logical_split):
-    result = read_candidate_set(candidate_set())
+def test_find_refuses_a_split_that_is_not_among_the_candidates(
+    golden_set, device_order, logical_split
+):
+    result = read_candidate_set(golden_set)
     with pytest.raises(ValueError, match="not among the candidates"):
         result.find(device_order, logical_split)
 
 
-def test_reading_never_mutates_the_input_or_points_into_it():
-    raw = candidate_set()
+def test_reading_never_mutates_the_input_or_points_into_it(golden_set):
+    raw = golden_set
     before = copy.deepcopy(raw)
     result = read_candidate_set(raw)
     assert raw == before
@@ -104,8 +90,8 @@ def test_reading_never_mutates_the_input_or_points_into_it():
     assert raw == before
 
 
-def test_records_are_frozen():
-    result = read_candidate_set(candidate_set())
+def test_records_are_frozen(golden_set):
+    result = read_candidate_set(golden_set)
     records = [
         (result, "total_layers"),
         (result.devices[0], "device_id"),
@@ -417,8 +403,8 @@ INVALID = [
 
 
 @pytest.mark.parametrize("case", INVALID, ids=lambda case: case[0])
-def test_invalid_candidate_set_is_refused_with_the_field_named(case):
+def test_invalid_candidate_set_is_refused_with_the_field_named(golden_set, case):
     _, mutate, fragment = case
-    raw = mutate(candidate_set())
+    raw = mutate(golden_set)
     with pytest.raises(ValueError, match=rf"^{re.escape(fragment)}"):
         read_candidate_set(raw)

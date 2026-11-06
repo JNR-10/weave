@@ -12,11 +12,7 @@ memory_feasible contradicts its rejection reasons, and a Mac whose budget differ
 candidates, so every edit below keeps both consistent.
 """
 
-import copy
-import functools
-import json
 import re
-from pathlib import Path
 
 import pytest
 
@@ -25,9 +21,6 @@ from weave.scheduler.policies import (
     memory_proportional_counts,
     read_candidate_set,
 )
-
-ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
 
 PRESSURE = "SIMULATED-m4-pressure"
 SECOND = "SIMULATED-second-mac"
@@ -43,16 +36,6 @@ INFEASIBLE_REASON = (
 )
 
 
-@functools.cache
-def _golden():
-    return json.loads(GOLDEN.read_text())
-
-
-def candidate_set():
-    """A fresh copy of the fixture's candidate set, safe to edit."""
-    return copy.deepcopy(_golden())
-
-
 def _plan(raw, split, first_device):
     """The raw candidate with this logical_split whose stage 0 runs on first_device."""
     for candidate in raw["candidates"]:
@@ -66,28 +49,22 @@ def _choose(raw):
     return memory_proportional(read_candidate_set(raw))
 
 
-def test_fixture_memory_proportional_split_is_feasible():
-    choice = _choose(candidate_set())
+def test_fixture_memory_proportional_split_is_feasible(golden_set):
+    choice = _choose(golden_set)
     assert choice.policy == "memory_proportional"
     assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE, SECOND)
     assert choice.plan.logical_split == (1, 27)
-    assert choice.plan.plan_id == _plan(_golden(), [1, 27], PRESSURE)["plan_id"]
+    assert choice.plan.plan_id == _plan(golden_set, [1, 27], PRESSURE)["plan_id"]
     assert choice.plan.headroom_bytes == (937164800, 19934740480)
     assert choice.plan.rejection_reasons == ()
     assert choice.reason == FEASIBLE_REASON
 
 
-def test_a_split_that_fails_the_estimate_is_reported_not_replaced():
-    raw = candidate_set()
-    plan = _plan(raw, [1, 27], PRESSURE)
-    plan["memory_feasible"] = False
-    plan["rejection_reasons"] = [
-        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 1}
-    ]
-    plan["assignments"][0]["headroom_bytes"] = -1
-    choice = _choose(raw)
+def test_a_split_that_fails_the_estimate_is_reported_not_replaced(golden_set, make_unfit):
+    plan = make_unfit(_plan(golden_set, [1, 27], PRESSURE))
+    choice = _choose(golden_set)
     assert choice.policy == "memory_proportional"
     assert choice.outcome == "MEMORY_INFEASIBLE"
     assert choice.plan is not None
@@ -96,24 +73,22 @@ def test_a_split_that_fails_the_estimate_is_reported_not_replaced():
     assert choice.reason == INFEASIBLE_REASON
 
 
-def test_a_missing_proportional_plan_is_refused_not_replaced():
-    raw = candidate_set()
-    raw["candidates"].remove(_plan(raw, [1, 27], PRESSURE))
-    candidates = read_candidate_set(raw)
+def test_a_missing_proportional_plan_is_refused_not_replaced(golden_set):
+    golden_set["candidates"].remove(_plan(golden_set, [1, 27], PRESSURE))
+    candidates = read_candidate_set(golden_set)
     with pytest.raises(ValueError, match="not among the candidates"):
         memory_proportional(candidates)
 
 
-def test_the_split_follows_the_budgets():
-    raw = candidate_set()
+def test_the_split_follows_the_budgets(golden_set):
     # The pressure Mac gets the second Mac's budget in every candidate, so the reader's check that
     # a Mac states one budget still passes. The edited set keeps the golden verdicts, which the
     # policy reports as given; only the split is asserted.
-    for candidate in raw["candidates"]:
+    for candidate in golden_set["candidates"]:
         for assignment in candidate["assignments"]:
             if assignment["device_id"] == PRESSURE:
                 assignment["safe_process_budget_bytes"] = 25769803776
-    choice = _choose(raw)
+    choice = _choose(golden_set)
     assert choice.policy == "memory_proportional"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE, SECOND)

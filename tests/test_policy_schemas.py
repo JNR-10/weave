@@ -1,6 +1,5 @@
 """The committed placement-decision schema is the contract; code must not drift from it silently."""
 
-import json
 import sys
 from pathlib import Path
 
@@ -21,9 +20,7 @@ def test_generated_schemas_match_committed(tmp_path, monkeypatch):
     generated = sorted(p.name for p in tmp_path.iterdir())
     assert generated == sorted(p.name for p in COMMITTED.iterdir())
     for name in generated:
-        assert json.loads((tmp_path / name).read_text()) == json.loads(
-            (COMMITTED / name).read_text()
-        )
+        assert (tmp_path / name).read_bytes() == (COMMITTED / name).read_bytes()
 
 
 def test_refusal_writes_nothing(tmp_path, monkeypatch):

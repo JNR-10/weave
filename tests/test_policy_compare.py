@@ -42,10 +42,6 @@ def run_command(monkeypatch, *argv):
     policies.main()
 
 
-def golden():
-    return json.loads(CANDIDATES.read_text())
-
-
 def table_rows(text):
     """The policy rows: every line after the separator."""
     lines = text.splitlines()
@@ -64,11 +60,11 @@ def test_comparison_of_the_golden_file_matches_the_golden_comparison(monkeypatch
     assert captured.out == COMPARISON.read_text(), REGENERATE
 
 
-def test_comparison_names_the_input_and_each_policys_choice():
+def test_comparison_names_the_input_and_each_policys_choice(golden_set):
     text = policies.compare(CANDIDATES.read_bytes())
     sha = hashlib.sha256(CANDIDATES.read_bytes()).hexdigest()
     first = text.splitlines()[0]
-    assert golden()["source_snapshot_id"] in first
+    assert golden_set["source_snapshot_id"] in first
     assert sha in first
     assert not text.endswith("\n")
 
@@ -95,19 +91,14 @@ def test_comparison_names_the_input_and_each_policys_choice():
         assert row.startswith(f"| {name} | ")
 
 
-def test_a_policy_with_no_plan_gets_a_row_of_nones():
-    raw = golden()
-    second_alone = raw["candidates"][1]
-    assert raw["candidates"][0]["assignments"][0]["device_id"] == PRESSURE
+def test_a_policy_with_no_plan_gets_a_row_of_nones(golden_set, make_unfit):
+    second_alone = golden_set["candidates"][1]
+    assert golden_set["candidates"][0]["assignments"][0]["device_id"] == PRESSURE
     assert second_alone["assignments"][0]["device_id"] == SECOND
     assert len(second_alone["logical_split"]) == 1
-    second_alone["memory_feasible"] = False
-    second_alone["rejection_reasons"] = [
-        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": SECOND, "excess_bytes": 1},
-    ]
-    second_alone["assignments"][0]["headroom_bytes"] = -1
+    make_unfit(second_alone)
 
-    lines = policies.compare(json.dumps(raw).encode()).splitlines()
+    lines = policies.compare(json.dumps(golden_set).encode()).splitlines()
 
     assert "| best_single_device | NO_FEASIBLE_PLAN | none | none | none | none |" in lines
 
@@ -150,4 +141,27 @@ def test_the_policy_mode_still_writes_one_record(tmp_path, monkeypatch):
         "--output",
         str(out),
     )
-    assert json.loads(out.read_text()) == policies.decide(CANDIDATES.read_bytes(), "equal_split")
+    record = json.loads(out.read_text())
+    # Literal values: the field list from the decision schema, the plan and outcome from the
+    # equal_split row of tests/golden/policy-comparison.md. The full record is in
+    # test_policy_decision.py.
+    assert list(record) == [
+        "schema_version",
+        "simulation",
+        "policy",
+        "source_snapshot_id",
+        "candidate_set_sha256",
+        "chosen_plan_id",
+        "outcome",
+        "reason",
+        "rejection_reasons",
+        "executable",
+        "runtime_verified",
+    ]
+    assert record["policy"] == "equal_split"
+    assert record["chosen_plan_id"] == "candidate-f52712c34dc8ad3a"
+    assert record["outcome"] == "MEMORY_INFEASIBLE"
+    assert record["source_snapshot_id"] == "SIMULATED-qwen7-pressure-v2"
+    assert record["candidate_set_sha256"] == hashlib.sha256(CANDIDATES.read_bytes()).hexdigest()
+    # The command writes exactly what the library returns for the same input.
+    assert record == policies.decide(CANDIDATES.read_bytes(), "equal_split")

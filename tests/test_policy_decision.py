@@ -31,11 +31,6 @@ SHA = hashlib.sha256(GOLDEN.read_bytes()).hexdigest()
 PRESSURE = "SIMULATED-m4-pressure"
 SECOND = "SIMULATED-second-mac"
 
-EQUAL_SPLIT_REASON = (
-    "equal split [14, 14] on ['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
-    "fails the memory estimate on SIMULATED-m4-pressure"
-)
-
 FIELD_ORDER = [
     "schema_version",
     "simulation",
@@ -50,14 +45,66 @@ FIELD_ORDER = [
     "runtime_verified",
 ]
 
+# The full record of every policy on the golden file, written out by hand in field order. The
+# values come from the golden file and tests/golden/policy-comparison.md, not from decide().
+EXPECTED_RECORDS = {
+    "best_single_device": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "best_single_device",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-7cb504ce3de7854e",
+        "outcome": "MEMORY_FEASIBLE",
+        "reason": (
+            "SIMULATED-second-mac alone has the most headroom of the single-device plans "
+            "that pass the memory estimate: 19798163456 bytes"
+        ),
+        "rejection_reasons": [],
+        "executable": False,
+        "runtime_verified": False,
+    },
+    "equal_split": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "equal_split",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-f52712c34dc8ad3a",
+        "outcome": "MEMORY_INFEASIBLE",
+        "reason": (
+            "equal split [14, 14] on ['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
+            "fails the memory estimate on SIMULATED-m4-pressure"
+        ),
+        "rejection_reasons": [
+            {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 838336512},
+        ],
+        "executable": False,
+        "runtime_verified": False,
+    },
+    "memory_proportional": {
+        "schema_version": "2.0.0",
+        "simulation": True,
+        "policy": "memory_proportional",
+        "source_snapshot_id": "SIMULATED-qwen7-pressure-v2",
+        "candidate_set_sha256": SHA,
+        "chosen_plan_id": "candidate-bfa599b48584765b",
+        "outcome": "MEMORY_FEASIBLE",
+        "reason": (
+            "memory-proportional split [1, 27] on "
+            "['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
+            "from room [1073741824, 23622320128] bytes passes the memory estimate"
+        ),
+        "rejection_reasons": [],
+        "executable": False,
+        "runtime_verified": False,
+    },
+}
+
 
 def run_command(monkeypatch, *argv):
     monkeypatch.setattr(sys, "argv", [policies.__name__, *argv])
     policies.main()
-
-
-def golden():
-    return json.loads(GOLDEN.read_text())
 
 
 def schema():
@@ -88,38 +135,24 @@ def test_every_policy_gives_a_record_that_validates(name):
     assert record["runtime_verified"] is False
 
 
-def test_equal_split_record_on_the_golden_file_is_exact():
-    raw = golden()
-    record = equal_split_record()
+@pytest.mark.parametrize("name", ["best_single_device", "equal_split", "memory_proportional"])
+def test_record_on_the_golden_file_is_exact(name):
+    record = policies.decide(GOLDEN.read_bytes(), name)
     assert list(record) == FIELD_ORDER
-    assert record == {
-        "schema_version": "2.0.0",
-        "simulation": True,
-        "policy": "equal_split",
-        "source_snapshot_id": raw["source_snapshot_id"],
-        "candidate_set_sha256": SHA,
-        "chosen_plan_id": even_split_plan(raw, PRESSURE)["plan_id"],
-        "outcome": "MEMORY_INFEASIBLE",
-        "reason": EQUAL_SPLIT_REASON,
-        "rejection_reasons": [
-            {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 838336512},
-        ],
-        "executable": False,
-        "runtime_verified": False,
-    }
+    assert record == EXPECTED_RECORDS[name]
 
 
-def test_no_feasible_plan_record_names_every_failing_mac():
-    raw = golden()
-    second_alone = raw["candidates"][1]
+def test_the_equal_split_record_chooses_the_even_split_with_the_pressure_mac_first(golden_set):
+    chosen = even_split_plan(golden_set, PRESSURE)["plan_id"]
+    assert EXPECTED_RECORDS["equal_split"]["chosen_plan_id"] == chosen
+
+
+def test_no_feasible_plan_record_names_every_failing_mac(golden_set, make_unfit):
+    second_alone = golden_set["candidates"][1]
     assert second_alone["assignments"][0]["device_id"] == SECOND
     assert len(second_alone["logical_split"]) == 1
-    second_alone["memory_feasible"] = False
-    second_alone["rejection_reasons"] = [
-        {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": SECOND, "excess_bytes": 1},
-    ]
-    second_alone["assignments"][0]["headroom_bytes"] = -1
-    edited = json.dumps(raw).encode()
+    make_unfit(second_alone)
+    edited = json.dumps(golden_set).encode()
 
     record = policies.decide(edited, "best_single_device")
 
@@ -178,9 +211,9 @@ def test_command_writes_the_record_without_a_trailing_newline(tmp_path, monkeypa
         "--output",
         str(out),
     )
-    record = policies.decide(GOLDEN.read_bytes(), "memory_proportional")
-    assert json.loads(out.read_text()) == record
-    assert out.read_text() == json.dumps(record, indent=2)
+    expected = EXPECTED_RECORDS["memory_proportional"]
+    assert json.loads(out.read_text()) == expected
+    assert out.read_text() == json.dumps(expected, indent=2)
 
 
 def test_command_refuses_to_overwrite(tmp_path, monkeypatch):

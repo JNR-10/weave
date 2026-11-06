@@ -10,7 +10,6 @@ and 2000 bytes); they are not generator output. The tests assert which plan each
 the outcome and reason, never bytes as if they were real.
 """
 
-import copy
 import json
 from pathlib import Path
 
@@ -25,7 +24,6 @@ from weave.scheduler.policies import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
 SCHEMA = ROOT / "experiments/policies/schemas/v2/placement_decision.schema.json"
 
 PRESSURE = "SIMULATED-m4-pressure"
@@ -35,14 +33,14 @@ SECOND = "SIMULATED-second-mac"
 HEADROOM = {PRESSURE: 1000, SECOND: 2000}
 
 
-def one_layer_set():
-    """The golden set cut down to the two single-device plans of a one-layer model.
+def one_layer_set(raw):
+    """The golden set (the fixture's fresh copy) cut down to the two single-device plans of a
+    one-layer model.
 
     The reader does not check start_layer, mlx_split_by_rank or the byte components against each
     other, so only the fields below change. end_layer_exclusive is set to 1 to keep the layer
     range honest.
     """
-    raw = copy.deepcopy(json.loads(GOLDEN.read_text()))
     raw["candidates"] = raw["candidates"][:2]
     for candidate in raw["candidates"]:
         assignment = candidate["assignments"][0]
@@ -60,22 +58,22 @@ def one_layer_set():
     return raw
 
 
-def test_the_one_layer_set_is_accepted_by_the_reader():
-    candidates = read_candidate_set(one_layer_set())
+def test_the_one_layer_set_is_accepted_by_the_reader(golden_set):
+    candidates = read_candidate_set(one_layer_set(golden_set))
     assert candidates.total_layers == 1
     assert candidates.device_ids == (PRESSURE, SECOND)
 
 
-def test_equal_split_reports_no_feasible_plan_when_layers_are_fewer_than_macs():
-    choice = equal_split(read_candidate_set(one_layer_set()))
+def test_equal_split_reports_no_feasible_plan_when_layers_are_fewer_than_macs(golden_set):
+    choice = equal_split(read_candidate_set(one_layer_set(golden_set)))
     assert choice.policy == "equal_split"
     assert choice.outcome == "NO_FEASIBLE_PLAN"
     assert choice.plan is None
     assert choice.reason == "no equal split: 1 layers cannot give each of 2 Macs at least one"
 
 
-def test_memory_proportional_reports_no_feasible_plan_when_layers_are_fewer_than_macs():
-    choice = memory_proportional(read_candidate_set(one_layer_set()))
+def test_memory_proportional_reports_no_feasible_plan_when_layers_are_fewer_than_macs(golden_set):
+    choice = memory_proportional(read_candidate_set(one_layer_set(golden_set)))
     assert choice.policy == "memory_proportional"
     assert choice.outcome == "NO_FEASIBLE_PLAN"
     assert choice.plan is None
@@ -84,15 +82,15 @@ def test_memory_proportional_reports_no_feasible_plan_when_layers_are_fewer_than
     )
 
 
-def test_best_single_device_still_picks_a_mac_when_layers_are_fewer_than_macs():
-    choice = best_single_device(read_candidate_set(one_layer_set()))
+def test_best_single_device_still_picks_a_mac_when_layers_are_fewer_than_macs(golden_set):
+    choice = best_single_device(read_candidate_set(one_layer_set(golden_set)))
     assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (SECOND,)
 
 
-def test_compare_keeps_the_best_single_device_row_when_layers_are_fewer_than_macs():
-    text = policies.compare(json.dumps(one_layer_set()).encode())
+def test_compare_keeps_the_best_single_device_row_when_layers_are_fewer_than_macs(golden_set):
+    text = policies.compare(json.dumps(one_layer_set(golden_set)).encode())
     rows = text.splitlines()[-3:]
     assert rows[0].startswith("| best_single_device | MEMORY_FEASIBLE | ")
     assert rows[0].endswith("| [1] | SIMULATED-second-mac | 2000 |")
@@ -100,8 +98,8 @@ def test_compare_keeps_the_best_single_device_row_when_layers_are_fewer_than_mac
     assert rows[2] == "| memory_proportional | NO_FEASIBLE_PLAN | none | none | none | none |"
 
 
-def test_the_decision_record_for_no_split_has_no_chosen_plan_and_validates():
-    record = policies.decide(json.dumps(one_layer_set()).encode(), "equal_split")
+def test_the_decision_record_for_no_split_has_no_chosen_plan_and_validates(golden_set):
+    record = policies.decide(json.dumps(one_layer_set(golden_set)).encode(), "equal_split")
     assert record["chosen_plan_id"] is None
     assert record["outcome"] == "NO_FEASIBLE_PLAN"
     assert record["rejection_reasons"] == []

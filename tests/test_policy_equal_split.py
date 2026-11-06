@@ -11,17 +11,9 @@ whose memory_feasible contradicts its rejection reasons, so every edit below kee
 consistent.
 """
 
-import copy
-import functools
-import json
-from pathlib import Path
-
 import pytest
 
 from weave.scheduler.policies import equal_split, equal_split_counts, read_candidate_set
-
-ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = ROOT / "tests/golden/phase1-candidate-plans.json"
 
 PRESSURE = "SIMULATED-m4-pressure"
 SECOND = "SIMULATED-second-mac"
@@ -34,16 +26,6 @@ INFEASIBLE_REASON = (
     "equal split [14, 14] on ['SIMULATED-m4-pressure', 'SIMULATED-second-mac'] "
     "fails the memory estimate on SIMULATED-m4-pressure"
 )
-
-
-@functools.cache
-def _golden():
-    return json.loads(GOLDEN.read_text())
-
-
-def candidate_set():
-    """A fresh copy of the fixture's candidate set, safe to edit."""
-    return copy.deepcopy(_golden())
 
 
 def _even_split_plan(raw, first_device):
@@ -59,14 +41,14 @@ def _choose(raw):
     return equal_split(read_candidate_set(raw))
 
 
-def test_fixture_equal_split_is_infeasible_on_the_pressure_mac():
-    choice = _choose(candidate_set())
+def test_fixture_equal_split_is_infeasible_on_the_pressure_mac(golden_set):
+    choice = _choose(golden_set)
     assert choice.policy == "equal_split"
     assert choice.outcome == "MEMORY_INFEASIBLE"
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE, SECOND)
     assert choice.plan.logical_split == (14, 14)
-    assert choice.plan.plan_id == _even_split_plan(_golden(), PRESSURE)["plan_id"]
+    assert choice.plan.plan_id == _even_split_plan(golden_set, PRESSURE)["plan_id"]
     assert choice.plan.headroom_bytes == (-838336512, 21710241792)
     assert choice.plan.rejection_reasons == (
         {"code": "MEMORY_BUDGET_EXCEEDED", "device_id": PRESSURE, "excess_bytes": 838336512},
@@ -74,13 +56,12 @@ def test_fixture_equal_split_is_infeasible_on_the_pressure_mac():
     assert choice.reason == INFEASIBLE_REASON
 
 
-def test_an_equal_split_that_fits_is_feasible():
-    raw = candidate_set()
-    plan = _even_split_plan(raw, PRESSURE)
+def test_an_equal_split_that_fits_is_feasible(golden_set):
+    plan = _even_split_plan(golden_set, PRESSURE)
     plan["memory_feasible"] = True
     plan["rejection_reasons"] = []
     plan["assignments"][0]["headroom_bytes"] = 1
-    choice = _choose(raw)
+    choice = _choose(golden_set)
     assert choice.policy == "equal_split"
     assert choice.outcome == "MEMORY_FEASIBLE"
     assert choice.plan is not None
@@ -123,31 +104,28 @@ def test_counts_rule_refuses_bad_arguments(total, count, message):
         equal_split_counts(total, count)
 
 
-def test_a_model_with_fewer_layers_than_macs_has_no_equal_split():
-    raw = candidate_set()
-    raw["candidates"] = raw["candidates"][:2]
-    for candidate in raw["candidates"]:
+def test_a_model_with_fewer_layers_than_macs_has_no_equal_split(golden_set):
+    golden_set["candidates"] = golden_set["candidates"][:2]
+    for candidate in golden_set["candidates"]:
         candidate["logical_split"] = [1]
         candidate["assignments"][0]["layer_count"] = 1
-    candidates = read_candidate_set(raw)
+    candidates = read_candidate_set(golden_set)
     choice = equal_split(candidates)
     assert choice.outcome == "NO_FEASIBLE_PLAN"
     assert choice.plan is None
     assert choice.reason == "no equal split: 1 layers cannot give each of 2 Macs at least one"
 
 
-def test_a_missing_equal_split_plan_is_refused_not_replaced():
-    raw = candidate_set()
-    raw["candidates"].remove(_even_split_plan(raw, PRESSURE))
-    candidates = read_candidate_set(raw)
+def test_a_missing_equal_split_plan_is_refused_not_replaced(golden_set):
+    golden_set["candidates"].remove(_even_split_plan(golden_set, PRESSURE))
+    candidates = read_candidate_set(golden_set)
     with pytest.raises(ValueError, match="not among the candidates"):
         equal_split(candidates)
 
 
-def test_the_equal_split_never_searches_device_orders():
-    raw = candidate_set()
-    other = read_candidate_set(raw).find((SECOND, PRESSURE), (14, 14))
-    choice = _choose(raw)
+def test_the_equal_split_never_searches_device_orders(golden_set):
+    other = read_candidate_set(golden_set).find((SECOND, PRESSURE), (14, 14))
+    choice = _choose(golden_set)
     assert choice.plan is not None
     assert choice.plan.device_order == (PRESSURE, SECOND)
     assert choice.plan.plan_id != other.plan_id
