@@ -51,11 +51,13 @@ Compare every policy on one candidate file (prints a Markdown table, writes noth
 python -m weave.scheduler.policies --candidates "results/$PHASE1_SIM_ID/candidate_plans.json" --compare
 ```
 
-Write one policy's decision record, which names the candidate file by its SHA-256 and is checked against `experiments/policies/schemas/v2/placement_decision.schema.json`. Like the candidate command, it refuses to overwrite a file:
+Write one policy's decision record, which names the candidate file by its SHA-256. The command checks the record against `experiments/policies/schemas/v2/placement_decision.schema.json` before writing it and writes nothing if it fails. Like the candidate command, it refuses to overwrite a file. A decision is a new run, so it goes into a new `SIMULATED-` directory, not the candidate run's:
 
 ```sh
+PHASE1_DECISION_ID="SIMULATED-$(date -u +%Y%m%dT%H%M%SZ)-decision-v2"
+mkdir -p "results/$PHASE1_DECISION_ID"
 python -m weave.scheduler.policies --candidates "results/$PHASE1_SIM_ID/candidate_plans.json" \
-  --policy equal_split --output "results/$PHASE1_SIM_ID/decision-equal_split.json"
+  --policy equal_split --output "results/$PHASE1_DECISION_ID/decision-equal_split.json"
 ```
 
 Expected on the committed fixture: the second Mac alone (best single Mac), `[14, 14]` rejected on the pressure Mac by 838,336,512 bytes (equal split), and `[1, 27]` feasible (memory-proportional). The golden table is `tests/golden/policy-comparison.md`.
