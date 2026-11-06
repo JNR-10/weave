@@ -1,8 +1,8 @@
 # Spec 0002: Static placement policies over the candidate set
 
-- **Status:** implemented (plan steps 1–8 done, including the step 8 review fixes). Urmi confirmed
-  the implementation decisions before step 2 and decided the decision record (step 6) herself on
-  2026-10-28 to avoid stalling; Jainil and Mohit confirm or change it in the pull request
+- **Status:** in review (pull request #1). Plan steps 1–9 are done. Jainil's review approved the
+  decision record (version, schema folder and `chosen_plan_id`) and requested the fixes in steps
+  10–17, which are in progress; step 17 waits for pull request #2
 - **Owner:** Urmi
 - **Branch:** `feat/urmi-scheduler-placement-policies`, merged into `main` through a pull request
   reviewed by Jainil and Mohit
@@ -89,22 +89,29 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   static baseline has one fixed layout.
 - **Best single Mac:** among memory-feasible single-device plans, the one with the largest headroom;
   ties go to the earlier Mac. When none fits, the outcome is `NO_FEASIBLE_PLAN` and no plan is
-  chosen.
+  chosen; the record still carries every single-device plan's rejection reasons, so it says which
+  Mac failed and by how much.
 - **Equal split:** every Mac gets ⌊L / N⌋ layers and the first L mod N Macs in device order get one
   more, so 28 layers on two Macs is `[14, 14]` and on three is `[10, 9, 9]`.
 - **Memory-proportional split:** each Mac's room for layers is its safe process budget minus the
   costs every stage pays regardless of layers (replicated weights, workspace reserve, safety
   margin), floored at zero. Layers are shared in proportion to that room by largest remainder: each
   Mac gets the floor of its quota, and the leftover layers go to the largest fractional parts, ties
-  to the earlier Mac. Every Mac gets at least one layer, taken from the Mac with the most layers; if
+  to the earlier Mac. Every Mac gets at least one layer, taken from the Mac with the most layers (the
+  earliest such Mac on a tie); if
   every Mac has zero room the quotas are equal. Proportion is by layer count, which matches bytes
   only while layers weigh the same; the fixture's layers do, and measured profiles are out of scope.
-- **Reporting a plan that does not fit:** equal and memory-proportional always choose their plan;
-  the outcome is `FEASIBLE` or `INFEASIBLE` from the candidate's own `memory_feasible`, and the
-  candidate's rejection reasons are carried through. No fallback.
+- **Fewer layers than Macs:** no split can give every Mac a layer, so the generator emits only the
+  single-device plans. Equal and memory-proportional then report `NO_FEASIBLE_PLAN` with a reason
+  that says so, instead of raising, and `--compare` keeps every other policy's row.
+- **Reporting a plan that does not fit:** equal and memory-proportional otherwise always choose
+  their plan; the outcome is `MEMORY_FEASIBLE` or `MEMORY_INFEASIBLE` from the candidate's own
+  `memory_feasible`, and the candidate's rejection reasons are carried through. No fallback. The
+  outcome names say "memory" so no one reads them as "it runs", and every policy's reason uses the
+  same words: the plan "passes" or "fails" the memory estimate.
 - **Missing plan:** if the computed split is not among the candidates, the policy raises
   `ValueError`; it means the candidate set does not match the generator.
-- **Decision record (decided by Urmi on 2026-10-28; raised for review in the pull request):** a new
+- **Decision record (decided by Urmi on 2026-10-28; approved in Jainil's review of PR #1):** a new
   artifact under 2.0.0 that adds files and changes no existing field or schema byte. Fields:
   `schema_version`, `simulation: true`, `policy` (`best_single_device`, `equal_split` or
   `memory_proportional`), `source_snapshot_id`, `candidate_set_sha256` (of the candidate file's
@@ -117,8 +124,10 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   its own folder, `experiments/policies/schemas/v2/`, and committed there; a test holds the
   generator to the committed file. No existing schema, generator or checkpoint changes.
 - **Commands:** `python -m weave.scheduler.policies --candidates <file> --policy <name> --output
-  <file>` writes one decision record with exclusive creation; `--compare` prints the table for every
-  policy. Same JSON style as the candidate file.
+  <file>` checks the record against the committed decision schema and then writes it with
+  exclusive creation; a record that fails the schema is refused and nothing is written. Like the
+  checkpoint command, it imports `jsonschema` inside the function, so the module still imports
+  without it. `--compare` prints the table for every policy. Same JSON style as the candidate file.
 - **Phase limits:** none added. The candidate set already carries the Phase 1 limits; the policies
   themselves work for any number of Macs.
 - **Authorship:** commits are made under Urmi's account with no AI co-author trailers.
@@ -168,13 +177,16 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   device order; deferring the profiled policy.
 - The decision record is an interface addition under AGENTS.md "Ask first". To avoid stalling,
   Urmi decided it on 2026-10-28 (additive under 2.0.0, its own schema folder, `chosen_plan_id`);
-  the pull request asks Jainil and Mohit to confirm, and any change they ask for lands before merge.
+  the pull request asked Jainil and Mohit to confirm. Jainil's review approved all three choices.
 - With the raw budget instead, the fixture's memory-proportional split would be `[3, 25]`.
 - Beyond the plan steps: AGENTS.md lists `experiments/policies/schemas/v2/` among the contracts
   never edited in place (step 6), and `experiments/phase1/README.md` documents the policy commands
   (step 7).
-- Three or more Macs: the policy tests hand-build a minimal three-Mac candidate set from golden
-  pieces, because policy tests may not import the planner modules.
+- Three or more Macs: the first version hand-built a three-Mac set from golden pieces, because
+  policy tests could not import the planner modules; its headrooms were copied, not real. Pull
+  request #2 lets `test_policy_*` files use the generator, so step 17 builds the set with the real
+  generator (the fixture plus a copy of the second Mac, the device limit raised to 3 in the test
+  only).
 - Step 8's two-axis review (standards and spec) led to these fixes: the spec's status and decision
   wording were brought up to date; a rejection reason without `device_id` is refused at the read
   instead of failing later with a `KeyError`; rejection reasons became read-only; non-JSON input
@@ -182,11 +194,21 @@ Confirmed by Urmi before step 2; the decision record was decided on 2026-10-28 (
   shared verdict, parsing and layer-count code was extracted. Left as judgement calls: an enum for
   policy and outcome names, a shared test `conftest.py`, and reusing `weave.contracts.schemas.main`
   for the decision schema, which would change a shared Phase 1 module.
+- Jainil's review of PR #1 (`make check`: 354 passed, 1 skipped) requested five fixes before merge:
+  fewer layers than Macs must not crash `--compare` (step 12); the three-Mac test must use real
+  generator bytes (step 17); `--policy` must check the record it writes, as the README says (step
+  14); the README example must write into a new `SIMULATED-` folder, not the candidate run's
+  folder (step 15); and AGENTS.md must not claim that the decision schema is hashed into evidence,
+  because nothing hashes it (step 15). Urmi also took his optional fixes, except moving the shared
+  helpers into one module, which is a file move for its own pull request.
+- The outcome rename in step 11 regenerates `placement_decision.schema.json`. That file is not on
+  `main` yet, so this is the reviewed regeneration before the freeze, not an edit of a frozen
+  contract.
 
 ## Plan
 
-Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–8
-are done.
+Each step is test-first, passes `make check`, and is committed and pushed on its own. Steps 1–9
+are done; steps 10–17 answer the pull request review.
 
 1. **Spec:** add this spec.
 2. **Input reading:** typed candidate-set records and the invalid-input table.
@@ -198,3 +220,20 @@ are done.
 7. **Comparison:** the `--compare` command and its golden file.
 8. **Review:** run the code-review skill against `main` and fix its findings.
 9. **Pull request:** open it against `main` for Jainil's and Mohit's review.
+10. **Review plan:** record the review and steps 10–17 in this spec.
+11. **Outcome names and wording:** rename `FEASIBLE` / `INFEASIBLE` to `MEMORY_FEASIBLE` /
+    `MEMORY_INFEASIBLE` in the code, schema, golden table and tests; best single Mac's reason says
+    "passes the memory estimate" like the other two.
+12. **Fewer layers than Macs:** equal and memory-proportional report `NO_FEASIBLE_PLAN` with a reason
+    instead of raising; `--compare` keeps the best-single-Mac row. Tested with a one-layer set.
+13. **Reasons for `NO_FEASIBLE_PLAN`:** best single Mac's record carries every single-device plan's
+    rejection reasons.
+14. **Checked record:** `--policy` validates the record against the committed schema before it
+    writes, and refuses (writing nothing) when it fails.
+15. **Docs:** the README writes the decision record into a new `SIMULATED-` folder; AGENTS.md says
+    what the decision schema's bytes are for without claiming a hash.
+16. **Tests:** a shared `tests/conftest.py` for the golden loader and the "make a Mac not fit" edit;
+    a full expected record for every policy; command tests compared with literal expected records,
+    not with `decide()`; the schema test compares exact bytes.
+17. **Three Macs from the generator** (after pull request #2 merges and `main` is merged into this
+    branch): build the three-Mac set with the real generator and lock the real bytes.
