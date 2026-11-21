@@ -22,6 +22,7 @@ Guide gate G0 requires this record before Phase 1 sign-off. It states the shared
 
 - `schema_version` is `"2.0.0"` on every JSON artifact and every trace row. 1.0.0 inputs are rejected, never reinterpreted.
 - The committed schemas in `experiments/phase1/schemas/v2` are the contract. `tests/test_schemas.py` fails if the code drifts from them; a change means a reviewed regeneration, not an edit in place.
+- **Placement decision records** (spec 0002 / PR #1): additive under 2.0.0; schema folder `experiments/policies/schemas/v2/`; chosen-plan field `chosen_plan_id`. Approved by Jainil on PR #1 and by Mohit in `meetings/2026-11-08-mohit-owner-review.md`.
 
 ## 3. Units and conventions
 

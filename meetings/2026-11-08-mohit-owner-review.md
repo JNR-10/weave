@@ -36,7 +36,7 @@ No blocking findings. Future work I own: per-rank stage timings and reload-cost 
 | Check | Result |
 | --- | --- |
 | Layer nbytes + non-layer map | Pass — every non-layer name is replicated |
-| 4-bit scales/biases included | Pass — measured M4 profile sums to 613,129,216 B |
+| 4-bit scales/biases included | Pass — measured M4 profile: 28 × 131,111,936 layer bytes + 613,129,216 replicated bytes; both add up only with scales and biases included |
 | `profile_id` includes `source` / `measurement_kind` | Pass — simulated cannot share a measured ID |
 | Limitation string present | Pass — parameters only; no KV/workspace/OS |
 
@@ -66,4 +66,4 @@ No blocking findings. Calibration of `kv_bytes_per_element`, block rounding, and
 ## Action for teammates
 
 1. Jainil / Urmi: review Mohit's §11 positions in `meetings/phase1-interface-freeze.md` and check your boxes if you agree.
-2. Optional: teammate G5 reproduce from `main` using the Phase 1 README (author self-reproduce is separate).
+2. Teammate G5 reproduce from `main` using the Phase 1 README (guide §12; author self-reproduce is separate and does not close G5).
