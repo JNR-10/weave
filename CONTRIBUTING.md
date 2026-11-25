@@ -65,13 +65,17 @@ Experiment results are evidence for the report, so they need to be reproducible.
 - Note anything that could confound the measurement: background load, thermal state, which
   machines were connected over Thunderbolt versus Ethernet.
 - Repeat runs. macOS timing is noisy; single runs are not a result.
-- Share raw evidence directly with teammates, outside the repository; there is no team archive.
-  Zip the run directories and send the zip together with its checksum
-  (`shasum -a 256 <zip>`).
+- Share raw evidence outside the repository. Zip the run directories and send the zip together
+  with its checksum (`shasum -a 256 <zip>`).
 - Keep every evidence zip you send or receive in a `donotcheckin/` folder at the repository root.
   Create it once with `mkdir donotcheckin`; it is gitignored, so nothing in it can be committed by
   accident. Check a received zip against the sender's checksum before using it, and unzip it into
   a new, empty directory.
+- Back up every evidence zip to the team-only Google Drive folder, the team's shared evidence
+  archive. Upload it unchanged under its original name, and record the name and SHA-256 in the
+  experiment's README (for Phase 1, `experiments/phase1/README.md`). The folder link stays in the
+  team chat, never in the repository. A zip downloaded from Drive is checked against the recorded
+  checksum like any other received zip.
 
 ## Code
 

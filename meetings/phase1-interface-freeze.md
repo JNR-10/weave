@@ -69,7 +69,7 @@ Guide gate G0 requires this record before Phase 1 sign-off. It states the shared
 - **Measured:** `source: "measured"`, `simulation: false`, under `results/<run_id>/`.
 - **Simulated:** `source: "simulated"`, `simulation: true`, `SIMULATED-` identities, under `results/SIMULATED-<id>/`. Candidate output always has `simulation: true`, `executable: false`, `runtime_verified: false` and `selected_plan_id: null`.
 - `memory_feasible` means "passes a stated estimate". It never means executable, verified, fastest or selected.
-- Raw evidence is gitignored. **Archive (Mohit, 2026-11-08):** peer zip + SHA-256 under each member's local `donotcheckin/` (see `experiments/phase1/README.md` and `CONTRIBUTING.md`). No shared remote archive yet. Still needs Jainil and Urmi.
+- Raw evidence is gitignored. **Archive (Mohit, 2026-11-08):** peer zip + SHA-256 under each member's local `donotcheckin/` (see `experiments/phase1/README.md` and `CONTRIBUTING.md`). **Shared backup (Urmi asked, Jainil agreed, PR #3, 2026-11-12):** each zip is also backed up unchanged to the team-only Google Drive folder; the experiment README records its name and SHA-256, and the folder link stays out of the repository. Still needs Urmi.
 
 ## 10. Phase 1 authorship and long-term ownership
 
