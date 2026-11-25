@@ -9,56 +9,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from weave.contracts.reading import (
+    as_object,
+    bool_field,
+    positive_field,
+    positive_int,
+    required,
+    text_field,
+)
 from weave.estimator.memory import estimate_stage_memory
 
 VERSION = "2.0.0"
 
 
-# Reading the cluster state. Every error starts with the field's path ("devices[1].device_id: ...")
-# so whoever fixes the input knows exactly where to look.
-
-
-def _path(parent: str, key: str | int) -> str:
-    if isinstance(key, int):
-        return f"{parent}[{key}]"
-    return f"{parent}.{key}" if parent else key
-
-
-def _get(obj: dict[str, Any], key: str, parent: str) -> Any:
-    if key not in obj:
-        raise ValueError(f"{_path(parent, key)}: required")
-    return obj[key]
-
-
-def _object(value: Any, path: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError(f"{path}: expected a JSON object, got {type(value).__name__}")
-    return value
-
-
-def _text(obj: dict[str, Any], key: str, parent: str) -> str:
-    value = _get(obj, key, parent)
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{_path(parent, key)}: expected a non-empty string, got {value!r}")
-    return value
-
-
-def _boolean(obj: dict[str, Any], key: str, parent: str) -> bool:
-    value = _get(obj, key, parent)
-    if not isinstance(value, bool):
-        raise ValueError(f"{_path(parent, key)}: expected true or false, got {value!r}")
-    return value
-
-
-def _positive_int(value: Any, path: str) -> int:
-    # bool is a subclass of int in Python, so `type(...) is int` keeps true/false out.
-    if type(value) is not int or value < 1:
-        raise ValueError(f"{path}: expected a positive integer, got {value!r}")
-    return value
-
-
-def _positive_field(obj: dict[str, Any], key: str, parent: str) -> int:
-    return _positive_int(_get(obj, key, parent), _path(parent, key))
+# Reading the cluster state. Every error starts with the field's path (weave.contracts.reading).
 
 
 @dataclass(frozen=True)
@@ -81,8 +45,8 @@ class _ModelProfile:
 
 
 def _parse_model(model: dict[str, Any]) -> _ModelProfile:
-    total = _positive_field(model, "total_layers", "model")
-    weights = _get(model, "layer_weight_bytes", "model")
+    total = positive_field(model, "total_layers", "model")
+    weights = required(model, "layer_weight_bytes", "model")
     if not isinstance(weights, list):
         raise ValueError(f"model.layer_weight_bytes: expected a list, got {type(weights).__name__}")
     if len(weights) != total:
@@ -90,17 +54,17 @@ def _parse_model(model: dict[str, Any]) -> _ModelProfile:
             f"model.layer_weight_bytes: expected one entry per layer ({total}), got {len(weights)}"
         )
     return _ModelProfile(
-        model_id=_text(model, "model_id", "model"),
-        model_revision=_text(model, "model_revision", "model"),
-        profile_id=_text(model, "profile_id", "model"),
+        model_id=text_field(model, "model_id", "model"),
+        model_revision=text_field(model, "model_revision", "model"),
+        profile_id=text_field(model, "profile_id", "model"),
         layer_weight_bytes=tuple(
-            _positive_int(n, f"model.layer_weight_bytes[{i}]") for i, n in enumerate(weights)
+            positive_int(n, f"model.layer_weight_bytes[{i}]") for i, n in enumerate(weights)
         ),
-        replicated_weight_bytes=_positive_field(model, "replicated_weight_bytes", "model"),
-        kv_heads=_positive_field(model, "kv_heads", "model"),
-        head_dim=_positive_field(model, "head_dim", "model"),
-        kv_bytes_per_element=_positive_field(model, "kv_bytes_per_element", "model"),
-        source=_text(model, "source", "model"),
+        replicated_weight_bytes=positive_field(model, "replicated_weight_bytes", "model"),
+        kv_heads=positive_field(model, "kv_heads", "model"),
+        head_dim=positive_field(model, "head_dim", "model"),
+        kv_bytes_per_element=positive_field(model, "kv_bytes_per_element", "model"),
+        source=text_field(model, "source", "model"),
     )
 
 
@@ -116,9 +80,9 @@ class _RequestEnvelope:
 def _parse_request(request: dict[str, Any]) -> _RequestEnvelope:
     parent = "request_envelope"
     return _RequestEnvelope(
-        prompt_tokens_upper_bound=_positive_field(request, "prompt_tokens_upper_bound", parent),
-        max_new_tokens=_positive_field(request, "max_new_tokens", parent),
-        concurrency=_positive_field(request, "concurrency", parent),
+        prompt_tokens_upper_bound=positive_field(request, "prompt_tokens_upper_bound", parent),
+        max_new_tokens=positive_field(request, "max_new_tokens", parent),
+        concurrency=positive_field(request, "concurrency", parent),
     )
 
 
@@ -138,20 +102,20 @@ def _parse_devices(devices: list[Any]) -> tuple[_DeviceBudget, ...]:
     parsed: list[_DeviceBudget] = []
     for i, raw in enumerate(devices):
         parent = f"devices[{i}]"
-        device = _object(raw, parent)
-        device_id = _text(device, "device_id", parent)
+        device = as_object(raw, parent)
+        device_id = text_field(device, "device_id", parent)
         if device_id in {d.device_id for d in parsed}:
             raise ValueError(f"{parent}.device_id: duplicate {device_id!r}")
         parsed.append(
             _DeviceBudget(
                 device_id=device_id,
-                source=_text(device, "source", parent),
-                budget_basis=_text(device, "budget_basis", parent),
-                safe_process_budget_bytes=_positive_field(
+                source=text_field(device, "source", parent),
+                budget_basis=text_field(device, "budget_basis", parent),
+                safe_process_budget_bytes=positive_field(
                     device, "safe_process_budget_bytes", parent
                 ),
-                workspace_reserve_bytes=_positive_field(device, "workspace_reserve_bytes", parent),
-                safety_margin_bytes=_positive_field(device, "safety_margin_bytes", parent),
+                workspace_reserve_bytes=positive_field(device, "workspace_reserve_bytes", parent),
+                safety_margin_bytes=positive_field(device, "safety_margin_bytes", parent),
             )
         )
     return tuple(parsed)
@@ -169,17 +133,17 @@ class _ClusterState:
 
 
 def _parse_state(raw: Any) -> _ClusterState:
-    state = _object(raw, "state")
-    version = _get(state, "schema_version", "")
+    state = as_object(raw, "state")
+    version = required(state, "schema_version", "")
     if version != VERSION:
         raise ValueError(
             f"schema_version: unsupported {version!r}; migrate explicitly to {VERSION}"
         )
-    snapshot_id = _text(state, "snapshot_id", "")
-    simulation = _boolean(state, "simulation", "")
-    model = _parse_model(_object(_get(state, "model", ""), "model"))
-    request = _parse_request(_object(_get(state, "request_envelope", ""), "request_envelope"))
-    devices = _get(state, "devices", "")
+    snapshot_id = text_field(state, "snapshot_id", "")
+    simulation = bool_field(state, "simulation", "")
+    model = _parse_model(as_object(required(state, "model", ""), "model"))
+    request = _parse_request(as_object(required(state, "request_envelope", ""), "request_envelope"))
+    devices = required(state, "devices", "")
     if not isinstance(devices, list):
         raise ValueError(f"devices: expected a list, got {type(devices).__name__}")
     if not devices:
@@ -245,7 +209,7 @@ def assignments(device_order: Sequence[str], logical_counts: Sequence[int]) -> l
             f"device_order: expected {len(logical_counts)} devices to match logical_counts, "
             f"got {len(device_order)}"
         )
-    counts = [_positive_int(c, f"logical_counts[{i}]") for i, c in enumerate(logical_counts)]
+    counts = [positive_int(c, f"logical_counts[{i}]") for i, c in enumerate(logical_counts)]
     seen: set[str] = set()
     for i, device_id in enumerate(device_order):
         if not isinstance(device_id, str) or not device_id:
