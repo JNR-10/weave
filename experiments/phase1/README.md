@@ -154,7 +154,7 @@ python -m weave.telemetry.validate_evidence "results/TAMPER-CHECK/$PHASE1_RUN_ID
 
 ## Measured evidence (gitignored under `results/`)
 
-Sharing: raw evidence is shared directly between teammates as a zip plus its SHA-256, outside the repository and with no team archive; see Experiments in [CONTRIBUTING.md](../../CONTRIBUTING.md). Keep the zips in your local `donotcheckin/` folder, which is gitignored. Mohit's zip of `results/` from 2026-10-25 is `weave-phase1-m4-evidence-20261025T224835Z.zip`, SHA-256 `81cfedc907de3a7c237e052bab64d31670595377097b7fa9707261ab62ec15fe`. It holds the runs below and the 2026-10-22 attempts.
+Sharing: raw evidence is shared as a zip plus its SHA-256, outside the repository. Keep the zips in your local `donotcheckin/` folder, which is gitignored, and back each one up unchanged to the team-only Google Drive folder; see Experiments in [CONTRIBUTING.md](../../CONTRIBUTING.md). The names and checksums below are how a copy from either place is checked. Mohit's zip of `results/` from 2026-10-25 is `weave-phase1-m4-evidence-20261025T224835Z.zip`, SHA-256 `81cfedc907de3a7c237e052bab64d31670595377097b7fa9707261ab62ec15fe`. It holds the runs below and the 2026-10-22 attempts.
 
 ### 2026-10-25 acceptance rerun
 

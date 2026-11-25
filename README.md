@@ -44,6 +44,8 @@ safe request boundaries.
 | `src/weave/estimator` | Predicts per-device memory demand from context length, output length, and request concurrency |
 | `src/weave/scheduler` | Selects participating Macs and the per-device layer assignment; revises at safe request boundaries |
 | `src/weave/telemetry` | Runtime monitoring — stage timings, per-node memory, network cost, OOM events |
+| `src/weave/runtime` | Applies a chosen split on real Macs: MLX rank order, split-aware loading, lock-step generation (spec 0005) |
+| `src/weave/evaluation` | Predeclared evaluation plan and the combiner that turns run records into per-policy results (spec 0003) |
 
 ## Evaluation
 
@@ -90,7 +92,8 @@ make check      # lint, format check and tests; CI runs the same on every push
 ```
 
 Coding agents start from [AGENTS.md](AGENTS.md); measured runs follow
-[experiments/phase1/README.md](experiments/phase1/README.md).
+[experiments/phase1/README.md](experiments/phase1/README.md), and two-Mac bring-up follows
+[experiments/phase2/README.md](experiments/phase2/README.md).
 
 ## Roadmap
 

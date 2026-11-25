@@ -16,77 +16,42 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from weave.contracts.reading import (
+    as_object,
+    bool_field,
+    field_path,
+    positive_field,
+    positive_int,
+    required,
+    text_field,
+)
 from weave.scheduler.candidates import VERSION
 from weave.telemetry.baseline import source_checkout
 
 DECISION_SCHEMA = Path("experiments/policies/schemas/v2/placement_decision.schema.json")
 
 # Reading the candidate set. Every error starts with the field's path ("candidates[2].mode: ..."),
-# as in weave.scheduler.candidates. The small helpers are repeated here on purpose: modules do not
-# import each other's private helpers.
-
-
-def _path(parent: str, key: str | int) -> str:
-    if isinstance(key, int):
-        return f"{parent}[{key}]"
-    return f"{parent}.{key}" if parent else key
-
-
-def _get(obj: dict[str, Any], key: str, parent: str) -> Any:
-    if key not in obj:
-        raise ValueError(f"{_path(parent, key)}: required")
-    return obj[key]
-
-
-def _object(value: Any, path: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError(f"{path}: expected a JSON object, got {type(value).__name__}")
-    return value
-
-
-def _text(obj: dict[str, Any], key: str, parent: str) -> str:
-    value = _get(obj, key, parent)
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{_path(parent, key)}: expected a non-empty string, got {value!r}")
-    return value
-
-
-def _boolean(obj: dict[str, Any], key: str, parent: str) -> bool:
-    value = _get(obj, key, parent)
-    if not isinstance(value, bool):
-        raise ValueError(f"{_path(parent, key)}: expected true or false, got {value!r}")
-    return value
+# using the shared readers in weave.contracts.reading.
 
 
 def _expect_bool(obj: dict[str, Any], key: str, expected: bool, parent: str) -> None:
     """Refuse anything but the one safe value; `is not` also keeps 0 and 1 out."""
-    value = _get(obj, key, parent)
+    value = required(obj, key, parent)
     if value is not expected:
         word = "true" if expected else "false"
-        raise ValueError(f"{_path(parent, key)}: expected {word}, got {value!r}")
-
-
-def _positive_int(value: Any, path: str) -> int:
-    # bool is a subclass of int in Python, so `type(...) is int` keeps true/false out.
-    if type(value) is not int or value < 1:
-        raise ValueError(f"{path}: expected a positive integer, got {value!r}")
-    return value
-
-
-def _positive_field(obj: dict[str, Any], key: str, parent: str) -> int:
-    return _positive_int(_get(obj, key, parent), _path(parent, key))
+        raise ValueError(f"{field_path(parent, key)}: expected {word}, got {value!r}")
 
 
 def _expect_int(obj: dict[str, Any], key: str, expected: int, parent: str) -> None:
-    value = _get(obj, key, parent)
+    value = required(obj, key, parent)
     if type(value) is not int or value != expected:
-        raise ValueError(f"{_path(parent, key)}: expected {expected}, got {value!r}")
+        raise ValueError(f"{field_path(parent, key)}: expected {expected}, got {value!r}")
 
 
 def _check_version(obj: dict[str, Any], parent: str) -> None:
-    version = _get(obj, "schema_version", parent)
+    version = required(obj, "schema_version", parent)
     if version != VERSION:
-        where = _path(parent, "schema_version")
+        where = field_path(parent, "schema_version")
         raise ValueError(f"{where}: unsupported {version!r}; migrate explicitly to {VERSION}")
 
 
@@ -187,20 +152,20 @@ class _ParsedCandidate:
 
 
 def _parse_assignment(raw: Any, parent: str, stage: int, layers: int) -> _Stage:
-    obj = _object(raw, parent)
-    device_id = _text(obj, "device_id", parent)
+    obj = as_object(raw, parent)
+    device_id = text_field(obj, "device_id", parent)
     _expect_int(obj, "logical_stage", stage, parent)
     _expect_int(obj, "layer_count", layers, parent)
-    headroom = _get(obj, "headroom_bytes", parent)
+    headroom = required(obj, "headroom_bytes", parent)
     if type(headroom) is not int:
-        where = _path(parent, "headroom_bytes")
+        where = field_path(parent, "headroom_bytes")
         raise ValueError(f"{where}: expected an integer, got {headroom!r}")
-    budget = _positive_field(obj, "safe_process_budget_bytes", parent)
-    components_path = _path(parent, "memory_components")
-    components = _object(_get(obj, "memory_components", parent), components_path)
-    replicated = _positive_field(components, "replicated_weight_bytes", components_path)
-    workspace = _positive_field(components, "workspace_reserve_bytes", components_path)
-    safety = _positive_field(components, "safety_margin_bytes", components_path)
+    budget = positive_field(obj, "safe_process_budget_bytes", parent)
+    components_path = field_path(parent, "memory_components")
+    components = as_object(required(obj, "memory_components", parent), components_path)
+    replicated = positive_field(components, "replicated_weight_bytes", components_path)
+    workspace = positive_field(components, "workspace_reserve_bytes", components_path)
+    safety = positive_field(components, "safety_margin_bytes", components_path)
     return _Stage(Device(device_id, budget, replicated, workspace, safety), headroom)
 
 
@@ -213,7 +178,7 @@ def _parse_assignments(raw: Any, parent: str, split: tuple[int, ...]) -> tuple[_
         )
     stages: list[_Stage] = []
     for j, item in enumerate(raw):
-        assignment_path = _path(parent, j)
+        assignment_path = field_path(parent, j)
         stage = _parse_assignment(item, assignment_path, j, split[j])
         device_id = stage.device.device_id
         if device_id in {s.device.device_id for s in stages}:
@@ -225,7 +190,7 @@ def _parse_assignments(raw: Any, parent: str, split: tuple[int, ...]) -> tuple[_
 def _parse_split(raw: Any, path: str) -> tuple[int, ...]:
     if not isinstance(raw, list) or not raw:
         raise ValueError(f"{path}: expected a non-empty list, got {raw!r}")
-    return tuple(_positive_int(n, _path(path, k)) for k, n in enumerate(raw))
+    return tuple(positive_int(n, field_path(path, k)) for k, n in enumerate(raw))
 
 
 def _parse_reasons(raw: Any, path: str) -> tuple[Mapping[str, Any], ...]:
@@ -240,50 +205,52 @@ def _parse_reasons(raw: Any, path: str) -> tuple[Mapping[str, Any], ...]:
         raise ValueError(f"{path}: expected a list, got {type(raw).__name__}")
     reasons: list[Mapping[str, Any]] = []
     for k, item in enumerate(raw):
-        reason_path = _path(path, k)
-        obj = _object(item, reason_path)
-        _text(obj, "code", reason_path)
-        _text(obj, "device_id", reason_path)
+        reason_path = field_path(path, k)
+        obj = as_object(item, reason_path)
+        text_field(obj, "code", reason_path)
+        text_field(obj, "device_id", reason_path)
         reasons.append(types.MappingProxyType(copy.deepcopy(obj)))
     return tuple(reasons)
 
 
 def _parse_candidate(raw: Any, index: int, snapshot_id: str) -> _ParsedCandidate:
-    parent = _path("candidates", index)
-    obj = _object(raw, parent)
+    parent = field_path("candidates", index)
+    obj = as_object(raw, parent)
     _check_version(obj, parent)
     # The Phase 1 safety boundary: a candidate is never a decision, and never measured data.
     _expect_bool(obj, "simulation", True, parent)
     _expect_bool(obj, "selected", False, parent)
     _expect_bool(obj, "executable", False, parent)
     _expect_bool(obj, "runtime_verified", False, parent)
-    policy = _get(obj, "policy", parent)
+    policy = required(obj, "policy", parent)
     if policy != "candidate_only":
-        where = _path(parent, "policy")
+        where = field_path(parent, "policy")
         raise ValueError(f"{where}: expected 'candidate_only', got {policy!r}")
-    plan_id = _text(obj, "plan_id", parent)
-    own_snapshot = _text(obj, "source_snapshot_id", parent)
+    plan_id = text_field(obj, "plan_id", parent)
+    own_snapshot = text_field(obj, "source_snapshot_id", parent)
     if own_snapshot != snapshot_id:
-        where = _path(parent, "source_snapshot_id")
+        where = field_path(parent, "source_snapshot_id")
         raise ValueError(f"{where}: {own_snapshot!r} differs from the set's {snapshot_id!r}")
-    mode = _get(obj, "mode", parent)
+    mode = required(obj, "mode", parent)
     if mode not in ("single_device", "pipeline"):
-        where = _path(parent, "mode")
+        where = field_path(parent, "mode")
         raise ValueError(f"{where}: expected 'single_device' or 'pipeline', got {mode!r}")
-    split = _parse_split(_get(obj, "logical_split", parent), _path(parent, "logical_split"))
+    split = _parse_split(
+        required(obj, "logical_split", parent), field_path(parent, "logical_split")
+    )
     if (mode == "single_device") != (len(split) == 1):
-        where = _path(parent, "mode")
+        where = field_path(parent, "mode")
         raise ValueError(f"{where}: {mode!r} is inconsistent with {len(split)} stage(s)")
-    feasible = _boolean(obj, "memory_feasible", parent)
+    feasible = bool_field(obj, "memory_feasible", parent)
     reasons = _parse_reasons(
-        _get(obj, "rejection_reasons", parent), _path(parent, "rejection_reasons")
+        required(obj, "rejection_reasons", parent), field_path(parent, "rejection_reasons")
     )
     # A policy reports the verdict and carries the reasons through, so the two must agree.
     if feasible == bool(reasons):
-        where = _path(parent, "memory_feasible")
+        where = field_path(parent, "memory_feasible")
         raise ValueError(f"{where}: {feasible} contradicts {len(reasons)} rejection reason(s)")
-    assignments_path = _path(parent, "assignments")
-    stages = _parse_assignments(_get(obj, "assignments", parent), assignments_path, split)
+    assignments_path = field_path(parent, "assignments")
+    stages = _parse_assignments(required(obj, "assignments", parent), assignments_path, split)
     candidate = Candidate(
         plan_id=plan_id,
         device_order=tuple(s.device.device_id for s in stages),
@@ -358,14 +325,14 @@ def read_candidate_set(raw: Any) -> CandidateSet:
     Fails closed with a ValueError that starts with the offending field's path. The input is
     never mutated, and nothing is returned that still points into it.
     """
-    top = _object(raw, "candidate_set")
+    top = as_object(raw, "candidate_set")
     _check_version(top, "")
     _expect_bool(top, "simulation", True, "")
-    selected = _get(top, "selected_plan_id", "")
+    selected = required(top, "selected_plan_id", "")
     if selected is not None:
         raise ValueError(f"selected_plan_id: expected null, got {selected!r}")
-    snapshot_id = _text(top, "source_snapshot_id", "")
-    raw_candidates = _get(top, "candidates", "")
+    snapshot_id = text_field(top, "source_snapshot_id", "")
+    raw_candidates = required(top, "candidates", "")
     if not isinstance(raw_candidates, list) or not raw_candidates:
         raise ValueError(f"candidates: expected a non-empty list, got {raw_candidates!r}")
 
@@ -485,8 +452,8 @@ def equal_split_counts(total_layers: int, device_count: int) -> tuple[int, ...]:
     fixed, written rule, with no choice left about which Macs carry the extra layer. Public so the
     rule can be tested for any number of Macs without a candidate set.
     """
-    layers = _positive_int(total_layers, "total_layers")
-    devices = _positive_int(device_count, "device_count")
+    layers = positive_int(total_layers, "total_layers")
+    devices = positive_int(device_count, "device_count")
     _require_one_layer_each(layers, devices)
     base, extra = divmod(layers, devices)
     return tuple(base + 1 if i < extra else base for i in range(devices))
@@ -541,7 +508,7 @@ def memory_proportional_counts(total_layers: int, rooms: Sequence[int]) -> tuple
 
     Public so the rule can be tested for any number of Macs without a candidate set.
     """
-    layers = _positive_int(total_layers, "total_layers")
+    layers = positive_int(total_layers, "total_layers")
     if not isinstance(rooms, (list, tuple)) or not rooms:
         raise ValueError(f"rooms: expected a non-empty sequence, got {rooms!r}")
     for i, room in enumerate(rooms):

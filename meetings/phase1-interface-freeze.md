@@ -1,9 +1,9 @@
 # Phase 1 Interface Freeze — Contract 2.0.0
 
-- **Status:** Draft, pending sign-off by all three members. Mohit recorded positions on §11 on 2026-11-08; Jainil and Urmi still needed.
+- **Status:** Draft, pending Urmi's sign-off. Mohit recorded positions on §11 on 2026-11-08 and Jainil on 2026-11-25; Urmi still needed.
 - **Drafted:** 2026-10-25 by Jainil
 - **Governs:** Revised Phase 1 Implementation Guide v2 (document version) and interface version 2.0.0. The two identifiers are separate.
-- **Sign-off:** [ ] Jainil [x] Mohit [ ] Urmi
+- **Sign-off:** [x] Jainil [x] Mohit [ ] Urmi
 
 Guide gate G0 requires this record before Phase 1 sign-off. It states the shared names, units and semantics that the three Phase 1 components exchange.
 
@@ -58,7 +58,7 @@ Guide gate G0 requires this record before Phase 1 sign-off. It states the shared
 - `run_summary.json` records `workload_sha256` and `model_lock_sha256` for byte-exact copies of the inputs in the run directory.
 - It records `git_commit` for the checkout the runner was imported from, and `git_dirty` for uncommitted tracked changes. A dirty run also saves `git-diff.patch`.
 - The validator rejects runs that are dirty, have no commit, or whose copied inputs no longer match their hashes.
-- These are additions within 2.0.0; no field is renamed or removed. **Mohit (2026-11-08):** keep under 2.0.0; do not bump. Already enforced by the M4 acceptance validator. Still needs Jainil and Urmi.
+- These are additions within 2.0.0; no field is renamed or removed. **Mohit (2026-11-08):** keep under 2.0.0; do not bump. Already enforced by the M4 acceptance validator. **Jainil (2026-11-25):** agree. Still needs Urmi.
 
 ## 8. Model-lock format
 
@@ -69,7 +69,7 @@ Guide gate G0 requires this record before Phase 1 sign-off. It states the shared
 - **Measured:** `source: "measured"`, `simulation: false`, under `results/<run_id>/`.
 - **Simulated:** `source: "simulated"`, `simulation: true`, `SIMULATED-` identities, under `results/SIMULATED-<id>/`. Candidate output always has `simulation: true`, `executable: false`, `runtime_verified: false` and `selected_plan_id: null`.
 - `memory_feasible` means "passes a stated estimate". It never means executable, verified, fastest or selected.
-- Raw evidence is gitignored. **Archive (Mohit, 2026-11-08):** peer zip + SHA-256 under each member's local `donotcheckin/` (see `experiments/phase1/README.md` and `CONTRIBUTING.md`). No shared remote archive yet. Still needs Jainil and Urmi.
+- Raw evidence is gitignored. **Archive (Mohit, 2026-11-08):** peer zip + SHA-256 under each member's local `donotcheckin/` (see `experiments/phase1/README.md` and `CONTRIBUTING.md`). **Shared backup (Urmi asked, Jainil agreed, PR #3, 2026-11-12):** each zip is also backed up unchanged to the team-only Google Drive folder; the experiment README records its name and SHA-256, and the folder link stays out of the repository. Still needs Urmi.
 
 ## 10. Phase 1 authorship and long-term ownership
 
@@ -94,7 +94,7 @@ Phase 1 authorship is temporary and does not reassign the long-term roles in `RE
 
 ### Mohit positions (2026-11-08)
 
-Recorded for team review. Checking Mohit's box above does **not** close G0; Jainil and Urmi still sign.
+Recorded for team review. Checking Mohit's box above does **not** close G0 by itself.
 
 | # | Mohit position |
 | --- | --- |
@@ -102,3 +102,14 @@ Recorded for team review. Checking Mohit's box above does **not** close G0; Jain
 | 2 | **Local peer zip + SHA-256 in `donotcheckin/`.** Matches the Phase 1 README. Agree a shared remote later if needed; do not invent one now. |
 | 3 | **Prefer `.git/info/exclude` for personal tools.** `.rocketride/` is already in the shared `.gitignore`; leave it for now so we do not churn ignores without agreement, but new personal paths should stay local. |
 | 4 | **Leave the Phase 1 fixture at 4 bytes/element.** Do not edit committed simulated contracts. Calibrate bf16 + 256-token blocks in Phase 2 (P2-E), which I own with the estimator. |
+
+### Jainil positions (2026-11-25)
+
+Recorded for team review. With Mohit's and Jainil's boxes checked, G0 closes when Urmi signs.
+
+| # | Jainil position |
+| --- | --- |
+| 1 | **Yes — keep under 2.0.0, no version bump.** Same as Mohit. The provenance fields are additions; nothing is renamed or removed. |
+| 2 | **Team-only Google Drive folder as the shared backup.** Every evidence zip is uploaded there unchanged, and the experiment README records its name and SHA-256 (my "yes" to Urmi on PR #3, 2026-11-12). Local `donotcheckin/` copies stay. The folder link stays out of the repository. See §9 and `CONTRIBUTING.md`. |
+| 3 | **Agree with Mohit.** Leave `.rocketride/` in the shared `.gitignore`; new personal paths go in `.git/info/exclude`. |
+| 4 | **Agree with Mohit.** Keep the Phase 1 fixture at 4 bytes per element; calibrate bf16 and 256-token steps in P2-E. |
