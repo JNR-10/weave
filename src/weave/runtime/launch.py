@@ -195,13 +195,13 @@ def first_divergence(left: Sequence[int], right: Sequence[int]) -> int | None:
     return None if len(left) == len(right) else min(len(left), len(right))
 
 
-def _tokens(record: dict[str, Any], parent: str) -> list[int]:
-    raw = required(record, "tokens", parent)
+def _tokens(record: dict[str, Any], key: str, parent: str) -> list[int]:
+    """A non-empty list of token IDs; 0 is a real token ID, so only negatives are refused."""
+    raw = required(record, key, parent)
+    path = field_path(parent, key)
     if not isinstance(raw, list) or not raw:
-        raise ValueError(f"{field_path(parent, 'tokens')}: expected a non-empty list")
-    return [
-        _nonnegative(token, f"{field_path(parent, 'tokens')}[{i}]") for i, token in enumerate(raw)
-    ]
+        raise ValueError(f"{path}: expected a non-empty list")
+    return [_nonnegative(token, f"{path}[{i}]") for i, token in enumerate(raw)]
 
 
 def _nonnegative(value: Any, path: str) -> int:
@@ -236,7 +236,8 @@ def read_record(raw: Any, parent: str) -> dict[str, Any]:
     if required(record, "record_version", parent) != RECORD_VERSION:
         raise ValueError(f"{field_path(parent, 'record_version')}: expected {RECORD_VERSION!r}")
     if required(record, "status", parent) != "success":
-        raise ValueError(f"{field_path(parent, 'status')}: rank did not finish: {record!r}")
+        error = record.get("error")
+        raise ValueError(f"{field_path(parent, 'status')}: rank did not finish: {error!r}")
     run_id = text_field(record, "run_id", parent)
     simulated = bool_field(record, "simulation", parent)
     if simulated != run_id.startswith("SIMULATED-"):
@@ -255,8 +256,8 @@ def read_record(raw: Any, parent: str) -> dict[str, Any]:
         "end_idx": positive_int(required(record, "end_idx", parent), field_path(parent, "end_idx")),
         "device_order": _device_ids(plan, field_path(parent, "plan")),
         "logical_split": _counts(plan, "logical_split", field_path(parent, "plan")),
-        "prompt_tokens": _counts(record, "prompt_tokens", parent),
-        "tokens": _tokens(record, parent),
+        "prompt_tokens": _tokens(record, "prompt_tokens", parent),
+        "tokens": _tokens(record, "tokens", parent),
     }
 
 

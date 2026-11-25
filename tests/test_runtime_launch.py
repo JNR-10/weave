@@ -239,6 +239,13 @@ def test_record_refuses_simulated_and_measured_labels_that_disagree():
         _record(0, simulation=False)
 
 
+def test_token_id_zero_is_a_real_token():
+    record = _record(0, prompt_tokens=[0, 6, 7], tokens=[0, 12])
+    assert record["prompt_tokens"] == [0, 6, 7] and record["tokens"] == [0, 12]
+    with pytest.raises(ValueError, match=r"prompt_tokens\[0\]: expected a non-negative"):
+        _record(0, prompt_tokens=[-1])
+
+
 def test_record_refuses_a_failed_rank():
     with pytest.raises(ValueError, match="did not finish"):
         _record(0, status="error")
