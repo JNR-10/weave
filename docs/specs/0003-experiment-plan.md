@@ -1,6 +1,6 @@
 # Spec 0003: Predeclared evaluation plan, its checker and the result combiner
 
-- **Status:** in review (pull request #4). Plan steps 1–2 are done
+- **Status:** in review (pull request #4). Plan steps 1–3 are done
 - **Owner:** Urmi (long-term owner of ablation design). Written by Jainil's session at his request
   (schedule task T17), for Urmi's review
 - **Branch:** `feat/jainilr-phase2-portable`, merged into `main` through pull request #4
@@ -127,8 +127,9 @@ against a **frozen** plan, and the combiner refuses measured results against a d
 - Tests drive the public functions and commands with realistic input and assert on what a caller
   sees: the parsed plan, the cells, the summary numbers, the verdict, the written file and the
   raised error. No mocks.
-- Every record in the tests is simulated (`SIMULATED-` run IDs, `simulation: true`); no measured
-  numbers appear anywhere.
+- Every record the tests summarize is simulated (`SIMULATED-` run IDs, `simulation: true`) with
+  made-up numbers; a record labelled measured appears only to prove it is refused. No measured
+  number appears anywhere.
 - The committed plan passes the checker; its cell count (54) and its draft status are locked.
 - One parametrized invalid-input table per reader, asserting the field named in the error.
 - Quantiles on known data: nearest rank for n = 20 is the 19th value; failures make it infinite.
