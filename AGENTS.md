@@ -13,6 +13,8 @@ matters more than speed. Python 3.11+, src layout, import name `weave` (distribu
 - Auto-fix lint and formatting: `make fmt`
 - One test file: `.venv/bin/python -m pytest -q tests/test_candidates.py`
 - Model lock, measured runs, validator, negative checks: `experiments/phase1/README.md`
+- Two-Mac bring-up (unverified until gates P2-B to P2-D pass): `experiments/phase2/README.md`
+- Check the evaluation plan: `.venv/bin/python -m weave.evaluation.plan --check experiments/plans/evaluation-plan-v1.json`
 
 ## Done means
 
