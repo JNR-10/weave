@@ -1,6 +1,6 @@
 # Spec 0003: Predeclared evaluation plan, its checker and the result combiner
 
-- **Status:** in review (pull request #4). Plan step 1 is done
+- **Status:** in review (pull request #4). Plan steps 1–2 are done
 - **Owner:** Urmi (long-term owner of ablation design). Written by Jainil's session at his request
   (schedule task T17), for Urmi's review
 - **Branch:** `feat/jainilr-phase2-portable`, merged into `main` through pull request #4
@@ -83,8 +83,9 @@ against a **frozen** plan, and the combiner refuses measured results against a d
 - **Repeats:** 5 repeats per cell, each with 1 warmup request (excluded, as in Phase 1) and 20
   measured requests. Why 20: with the nearest-rank method the p95 of n values is the
   ⌈0.95·n⌉-th smallest, which is the maximum for every n below 20; n = 20 is the smallest count
-  whose p95 is not just the slowest request. Why 5: pooled, a cell has 100 measured requests (p95
-  is the 95th), and five per-repeat values give a median and a range; macOS timing is noisy and
+  whose p95 is not just the slowest request, so the checker refuses fewer. Why 5: pooled, a cell
+  has 100 measured requests (p95 is the 95th), and five per-repeat values give a median and a
+  range; macOS timing is noisy and
   single runs are not a result (CONTRIBUTING.md). For scale only: at Phase 1's measured 1.51 s
   median end to end on the M4, one short-workload cell is about 5 × 21 × 1.5 s ≈ 2.6 minutes plus
   model loads; long and concurrent cells are not measured yet.

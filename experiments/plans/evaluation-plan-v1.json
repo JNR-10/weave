@@ -1,0 +1,164 @@
+{
+  "schema_version": "2.0.0",
+  "plan_id": "evaluation-plan-v1",
+  "status": "draft",
+  "model_id": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+  "model_revision": "c26a38f6a37d0a51b4e9a1eb3026530fa35d9fed",
+  "repeats_per_cell": 5,
+  "warmup_requests_per_repeat": 1,
+  "measured_requests_per_repeat": 20,
+  "quantile_method": "nearest_rank",
+  "failed_request_latency": "infinite",
+  "primary_metric": "end_to_end_ms_p95",
+  "secondary_metrics": [
+    "end_to_end_ms_median",
+    "ttft_ms_p95",
+    "ttft_ms_median",
+    "observed_tpot_ms_median",
+    "throughput_tokens_per_s_median",
+    "failed_requests",
+    "oom_requests"
+  ],
+  "decision_rule": {
+    "reference_arm": "profiled_static",
+    "min_relative_difference": 0.05,
+    "require_non_overlapping_repeat_ranges": true
+  },
+  "policies": [
+    {
+      "policy": "best_single_device",
+      "label": "B0",
+      "available": true,
+      "may_use_multiple_macs": false,
+      "spec": "docs/specs/0002-placement-policies.md"
+    },
+    {
+      "policy": "equal_split",
+      "label": "B1",
+      "available": true,
+      "may_use_multiple_macs": true,
+      "spec": "docs/specs/0002-placement-policies.md"
+    },
+    {
+      "policy": "memory_proportional",
+      "label": "B2",
+      "available": true,
+      "may_use_multiple_macs": true,
+      "spec": "docs/specs/0002-placement-policies.md"
+    },
+    {
+      "policy": "profiled_static",
+      "label": "B3",
+      "available": false,
+      "may_use_multiple_macs": true,
+      "spec": "docs/specs/0004-profiled-static-policy.md"
+    },
+    {
+      "policy": "weave_adaptive",
+      "label": "Weave",
+      "available": false,
+      "may_use_multiple_macs": true,
+      "spec": null
+    }
+  ],
+  "ablations": [
+    {
+      "ablation_id": "weave-no-live-memory",
+      "base_policy": "weave_adaptive",
+      "disables_signal": "live_memory_headroom",
+      "available": false
+    },
+    {
+      "ablation_id": "weave-no-context-length",
+      "base_policy": "weave_adaptive",
+      "disables_signal": "context_length",
+      "available": false
+    },
+    {
+      "ablation_id": "weave-no-concurrency",
+      "base_policy": "weave_adaptive",
+      "disables_signal": "concurrency",
+      "available": false
+    },
+    {
+      "ablation_id": "weave-no-stage-timings",
+      "base_policy": "weave_adaptive",
+      "disables_signal": "observed_stage_timings",
+      "available": false
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "short-c1",
+      "purpose": "Phase 1 envelope: short prompt, one request at a time",
+      "prompt_tokens_upper_bound": 512,
+      "max_new_tokens": 64,
+      "concurrency": 1,
+      "memory_pressure": "none",
+      "compute_contention": "none",
+      "link_condition": "baseline",
+      "needs_two_macs": false,
+      "pilot_required": false
+    },
+    {
+      "scenario_id": "long-c1",
+      "purpose": "Long context: KV cache grows until a Mac with headroom nears its limit",
+      "prompt_tokens_upper_bound": 4096,
+      "max_new_tokens": 256,
+      "concurrency": 1,
+      "memory_pressure": "none",
+      "compute_contention": "none",
+      "link_condition": "baseline",
+      "needs_two_macs": false,
+      "pilot_required": true
+    },
+    {
+      "scenario_id": "short-c4",
+      "purpose": "Concurrent requests: memory and pipeline utilization change together",
+      "prompt_tokens_upper_bound": 512,
+      "max_new_tokens": 64,
+      "concurrency": 4,
+      "memory_pressure": "none",
+      "compute_contention": "none",
+      "link_condition": "baseline",
+      "needs_two_macs": false,
+      "pilot_required": true
+    },
+    {
+      "scenario_id": "short-c1-memory-pressure",
+      "purpose": "Background allocation lowers one Mac's available unified memory",
+      "prompt_tokens_upper_bound": 512,
+      "max_new_tokens": 64,
+      "concurrency": 1,
+      "memory_pressure": "induced",
+      "compute_contention": "none",
+      "link_condition": "baseline",
+      "needs_two_macs": false,
+      "pilot_required": true
+    },
+    {
+      "scenario_id": "short-c1-compute-contention",
+      "purpose": "Background compute slows one Mac's stage",
+      "prompt_tokens_upper_bound": 512,
+      "max_new_tokens": 64,
+      "concurrency": 1,
+      "memory_pressure": "none",
+      "compute_contention": "induced",
+      "link_condition": "baseline",
+      "needs_two_macs": false,
+      "pilot_required": true
+    },
+    {
+      "scenario_id": "short-c1-degraded-link",
+      "purpose": "Slower link between the Macs raises the cost of distributing",
+      "prompt_tokens_upper_bound": 512,
+      "max_new_tokens": 64,
+      "concurrency": 1,
+      "memory_pressure": "none",
+      "compute_contention": "none",
+      "link_condition": "degraded",
+      "needs_two_macs": true,
+      "pilot_required": true
+    }
+  ]
+}
